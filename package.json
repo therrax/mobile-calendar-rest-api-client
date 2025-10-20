@@ -1,0 +1,60 @@
+{
+  "name": "mobile-calendar-rest-api-client",
+  "version": "1.0.0",
+  "description": "Professional TypeScript/JavaScript client for Mobile Calendar API. PMS API is currently in testing mode only we will update library for production use in future.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.tss",
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "clean": "rimraf dist",
+    "prepublishOnly": "npm run clean && npm run build",
+    "dev": "npm run build:watch",
+    "example": "npm run build && node -r dotenv/config dist/examples/comprehensive-usage.js dotenv_config_path=.env",
+    "example:comprehensive": "npm run build && node -r dotenv/config dist/examples/comprehensive-usage.js dotenv_config_path=.env"
+  },
+  "keywords": [
+    "mobile-calendar",
+    "api",
+    "client",
+    "typescript",
+    "javascript",
+    "hotel",
+    "booking",
+    "reservation"
+  ],
+  "author": "Mobile Calendar Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mobile-calendar/api-client.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mobile-calendar/api-client/issues"
+  },
+  "homepage": "https://github.com/mobile-calendar/api-client#readme",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "luxon": "^3.7.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/luxon": "^3.7.1",
+    "@types/node": "^20.19.22",
+    "jest": "^29.5.0",
+    "rimraf": "^5.0.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

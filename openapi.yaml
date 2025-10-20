@@ -1,0 +1,4393 @@
+openapi: 3.0.0
+info:
+  title: 'Public REST API v1 – mobile-calendar.com'
+  description: "Public API for managing accommodation resources.\n\n**Formats:**\n- JSON for successful responses\n- `application/problem+json` (RFC 7807) for errors\n\n**Authorization:** Bearer JWT (`Authorization: Bearer <token>`)"
+  version: 1.0.0
+servers:
+  -
+    url: 'https://api.mobile-calendar.com/v1/public'
+    description: Production
+paths:
+  /auth/token:
+    post:
+      tags:
+        - auth
+      summary: 'Get access token (JWT)'
+      description: 'Requires valid user credentials. Returns `access_token` of type Bearer. Token expires after **3600 seconds (60 minutes)**. You must obtain a new token after expiration.'
+      operationId: createToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          description: 'Token generated successfully'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem400'
+        '401':
+          description: 'Invalid credentials'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+  /availability:
+    get:
+      tags:
+        - availability
+      summary: 'Get room availability for date range'
+      operationId: getAvailability
+      parameters:
+        -
+          name: roomId
+          in: query
+          description: 'Array of room IDs to check availability for. If not provided, returns all rooms.'
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: integer
+          example:
+            - 101
+            - 102
+            - 103
+        -
+          name: from
+          in: query
+          description: 'Start date for availability check (inclusive) - YYYY-MM-DD'
+          required: true
+          schema:
+            type: string
+            format: date
+          example: '2024-07-01'
+        -
+          name: to
+          in: query
+          description: "End date for availability check (inclusive) - YYYY-MM-DD. Maximum 90 days from 'from' date."
+          required: true
+          schema:
+            type: string
+            format: date
+          example: '2024-07-31'
+        -
+          name: includeRates
+          in: query
+          description: 'Whether to include rate information in the response (not implemented yet)'
+          required: false
+          schema:
+            type: boolean
+            default: false
+          example: false
+      responses:
+        '200':
+          description: 'Room availability data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityResponse'
+        '400':
+          description: 'Bad request - invalid date range or parameters'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem400'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '422':
+          description: 'Validation error - date range exceeds 90 days or invalid format'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem422'
+      security:
+        -
+          bearerAuth: []
+  /clients:
+    get:
+      tags:
+        - clients
+      summary: 'List clients (paginated)'
+      operationId: listClients
+      parameters:
+        -
+          $ref: '#/components/parameters/PageParam'
+        -
+          $ref: '#/components/parameters/LimitParam'
+        -
+          name: search
+          in: query
+          description: 'Search in name, forename, email, phone'
+          required: false
+          schema:
+            type: string
+        -
+          name: lang
+          in: query
+          description: 'Filter by language preference (ISO 639-1)'
+          required: false
+          schema:
+            type: string
+        -
+          name: countryId
+          in: query
+          description: 'Filter by country ID'
+          required: false
+          schema:
+            type: integer
+        -
+          name: clientType
+          in: query
+          description: 'Filter by client type'
+          required: false
+          schema:
+            type: string
+            enum:
+              - INDIVIDUAL
+              - COMPANY
+        -
+          name: orderBy
+          in: query
+          description: 'Sort field'
+          required: false
+          schema:
+            type: string
+            default: clientId
+            enum:
+              - clientId
+              - name
+              - forename
+              - addDate
+              - editDate
+        -
+          name: orderType
+          in: query
+          description: 'Sort direction'
+          required: false
+          schema:
+            type: string
+            default: ASC
+            enum:
+              - ASC
+              - DESC
+      responses:
+        '200':
+          description: 'List of clients'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '422':
+          description: 'Validation error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem422'
+      security:
+        -
+          bearerAuth: []
+    post:
+      tags:
+        - clients
+      summary: 'Create client'
+      operationId: createClient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientCreateRequest'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              description: 'URL of the new resource'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientCreateResponse'
+        '400':
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem400'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '422':
+          description: 'Validation error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem422'
+      security:
+        -
+          bearerAuth: []
+  '/clients/{id}':
+    get:
+      tags:
+        - clients
+      summary: 'Get client by ID'
+      operationId: getClient
+      parameters:
+        -
+          name: id
+          in: path
+          description: 'Client ID'
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '404':
+          description: 'Not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem404'
+      security:
+        -
+          bearerAuth: []
+    put:
+      tags:
+        - clients
+      summary: 'Update client'
+      operationId: updateClient
+      parameters:
+        -
+          name: id
+          in: path
+          description: 'Client ID'
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientUpdateRequest'
+      responses:
+        '200':
+          description: 'Updated successfully'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+        '400':
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem400'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '404':
+          description: 'Not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem404'
+        '422':
+          description: 'Validation error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem422'
+      security:
+        -
+          bearerAuth: []
+    delete:
+      tags:
+        - clients
+      summary: 'Delete client'
+      operationId: deleteClient
+      parameters:
+        -
+          name: id
+          in: path
+          description: 'Client ID'
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: 'Deleted successfully'
+          headers:
+            RUID:
+              description: 'Request unique identifier'
+              schema:
+                type: string
+                example: 67013c4b47832
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '404':
+          description: 'Not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem404'
+      security:
+        -
+          bearerAuth: []
+  /health:
+    get:
+      tags:
+        - health
+      summary: 'Health check'
+      description: 'Simple endpoint to check API availability.'
+      operationId: healthCheck
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  status: { type: string, example: ok }
+                  time: { type: string, format: date-time, example: '2025-09-28T10:12:33Z' }
+                  meta: { $ref: '#/components/schemas/MetaWithRuid' }
+                type: object
+  /invoices:
+    get:
+      tags:
+        - invoices
+      summary: 'List invoices (paginated)'
+      operationId: listInvoices
+      parameters:
+        -
+          $ref: '#/components/parameters/PageParam'
+        -
+          $ref: '#/components/parameters/LimitParam'
+        -
+          name: invoiceType
+          in: query
+          description: 'Invoice type: 0=Standard Invoice, 1=VAT Invoice, 2=Pro Forma Invoice, 3=Advance Invoice, 4=Correction Invoice, 5=VAT Exempt Invoice, 6=Advance Receipt, 7=Correction Receipt'
+          required: false
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+              - 6
+              - 7
+        -
+          name: search
+          in: query
+          description: 'Search in taxId, company name or invoice number'
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+        -
+          name: from
+          in: query
+          description: 'Filter by issue date from (YYYY-MM-DD)'
+          required: false
+          schema:
+            type: string
+            format: date
+        -
+          name: to
+          in: query
+          description: 'Filter by issue date to (YYYY-MM-DD)'
+          required: false
+          schema:
+            type: string
+            format: date
+        -
+          name: reservationId
+          in: query
+          description: 'Filter by reservation ID'
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        -
+          name: lastEdit
+          in: query
+          description: 'Filter: edited since Unix timestamp'
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        -
+          name: orderBy
+          in: query
+          description: 'Sort field'
+          required: false
+          schema:
+            type: string
+            default: invoiceId
+            enum:
+              - invoiceId
+              - invoiceNo
+              - issueDate
+              - addDate
+              - editDate
+        -
+          name: orderType
+          in: query
+          description: 'Sort direction'
+          required: false
+          schema:
+            type: string
+            default: DESC
+            enum:
+              - ASC
+              - DESC
+      responses:
+        '200':
+          description: 'Invoice list'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '422':
+          description: 'Validation error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem422'
+      security:
+        -
+          bearerAuth: []
+    post:
+      tags:
+        - invoices
+      summary: 'Create invoice'
+      operationId: createInvoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceCreateRequest'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              description: 'URL of the new invoice'
+              schema:
+                type: string
+                example: /invoices/12345
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceCreateResponse'
+        '400':
+          description: 'Invalid data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem400'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '422':
+          description: 'Validation error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem422'
+      security:
+        -
+          bearerAuth: []
+  '/invoices/{id}':
+    get:
+      tags:
+        - invoices
+      summary: 'Get invoice by ID'
+      operationId: getInvoice
+      parameters:
+        -
+          name: id
+          in: path
+          description: 'Invoice ID'
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '404':
+          description: 'Not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem404'
+      security:
+        -
+          bearerAuth: []
+    delete:
+      tags:
+        - invoices
+      summary: 'Delete invoice'
+      operationId: deleteInvoice
+      parameters:
+        -
+          name: id
+          in: path
+          description: 'Invoice ID'
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deleted
+          headers:
+            RUID:
+              description: 'Request unique identifier'
+              required: true
+              schema:
+                type: string
+                example: 01234567-89ab-cdef-0123-456789abcdef
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '404':
+          description: 'Not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem404'
+      security:
+        -
+          bearerAuth: []
+    patch:
+      tags:
+        - invoices
+      summary: 'Update invoice'
+      operationId: updateInvoice
+      parameters:
+        -
+          name: id
+          in: path
+          description: 'Invoice ID'
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceUpdateRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+        '400':
+          description: 'Invalid data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem400'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '404':
+          description: 'Not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem404'
+        '422':
+          description: 'Validation error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem422'
+      security:
+        -
+          bearerAuth: []
+  /pricing:
+    get:
+      tags:
+        - pricing
+      summary: 'Get pricing information for rooms/types and rates'
+      operationId: getPricing
+      parameters:
+        -
+          name: from
+          in: query
+          description: 'Start date for pricing check (inclusive) - YYYY-MM-DD'
+          required: true
+          schema:
+            type: string
+            format: date
+          example: '2025-12-28'
+        -
+          name: to
+          in: query
+          description: "End date for pricing check (inclusive) - YYYY-MM-DD. Maximum 90 days from 'from' date."
+          required: true
+          schema:
+            type: string
+            format: date
+          example: '2026-01-02'
+        -
+          name: roomId
+          in: query
+          description: 'Array of room IDs to get pricing for. If not provided, returns pricing for all rooms.'
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: integer
+          example:
+            - 30264
+            - 30265
+            - 30266
+        -
+          name: typeId
+          in: query
+          description: 'Array of room type IDs to get pricing for. If not provided, returns pricing for all room types.'
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: integer
+          example:
+            - 31
+            - 32
+            - 33
+        -
+          name: rateId
+          in: query
+          description: 'Array of rate IDs to get pricing for. If not provided, returns pricing for all rates.'
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: integer
+          example:
+            - 58
+            - 59
+            - 60
+        -
+          name: lastEdit
+          in: query
+          description: "Unix timestamp for cache validation. Returns 304 if data hasn't changed."
+          required: false
+          schema:
+            type: integer
+          example: 1640995200
+      responses:
+        '200':
+          description: 'Pricing data for requested rooms/types and rates'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingResponse'
+        '304':
+          description: "Not Modified - data hasn't changed since lastEdit timestamp"
+        '400':
+          description: 'Bad request - invalid date range or parameters'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem400'
+        '401':
+          description: 'Unauthorized - invalid or missing authentication token'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '422':
+          description: 'Validation error - date range exceeds 90 days, invalid date format, or invalid room/type/rate IDs'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem422'
+      security:
+        -
+          bearerAuth: []
+  /rates:
+    get:
+      tags:
+        - rates
+      summary: 'Get all rates'
+      operationId: getRates
+      responses:
+        '200':
+          description: 'List of all available rates'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatesResponse'
+        '401':
+          description: 'Unauthorized - invalid or missing authentication token'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+      security:
+        -
+          bearerAuth: []
+  /reservations:
+    get:
+      tags:
+        - reservations
+      summary: 'List reservations (paginated)'
+      operationId: listReservations
+      parameters:
+        -
+          $ref: '#/components/parameters/PageParam'
+        -
+          $ref: '#/components/parameters/LimitParam'
+        -
+          name: includeLocks
+          in: query
+          description: 'Include locks (0,1)'
+          required: false
+          schema:
+            type: boolean
+        -
+          name: from
+          in: query
+          description: 'Filter by arrival date from (YYYY-MM-DD)'
+          required: false
+          schema:
+            type: string
+            format: date
+        -
+          name: to
+          in: query
+          description: 'Filter by departure date to (YYYY-MM-DD)'
+          required: false
+          schema:
+            type: string
+            format: date
+        -
+          name: arrival
+          in: query
+          description: 'Filter by exact arrival date (YYYY-MM-DD)'
+          required: false
+          schema:
+            type: string
+            format: date
+        -
+          name: departure
+          in: query
+          description: 'Filter by exact departure date (YYYY-MM-DD)'
+          required: false
+          schema:
+            type: string
+            format: date
+        -
+          name: addDate
+          in: query
+          description: 'Filter by reservation creation date (YYYY-MM-DD)'
+          required: false
+          schema:
+            type: string
+            format: date
+        -
+          name: editDate
+          in: query
+          description: 'Filter by last modification date (YYYY-MM-DD)'
+          required: false
+          schema:
+            type: string
+            format: date
+        -
+          name: lastEdit
+          in: query
+          description: 'Filter reservations modified since Unix timestamp(6) (int)'
+          required: false
+          schema:
+            type: integer
+        -
+          name: paymentStatus
+          in: query
+          description: 'Filter by payment status'
+          required: false
+          schema:
+            type: string
+            enum:
+              - NO_PAYMENT
+              - PREPAYMENT_PAID
+              - PAID_ALL
+        -
+          name: sourceId
+          in: query
+          description: 'Filter by booking source ID'
+          required: false
+          schema:
+            type: integer
+        -
+          name: reservationId
+          in: query
+          description: 'Filter by specific reservation IDs (array)'
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: integer
+        -
+          name: roomId
+          in: query
+          description: 'Filter by room ID'
+          required: false
+          schema:
+            type: integer
+        -
+          name: orderBy
+          in: query
+          description: 'Sort field'
+          required: false
+          schema:
+            type: string
+            default: reservationId
+            enum:
+              - reservationId
+              - arrival
+              - departure
+              - addDate
+              - editDate
+        -
+          name: orderType
+          in: query
+          description: 'Sort direction'
+          required: false
+          schema:
+            type: string
+            default: ASC
+            enum:
+              - ASC
+              - DESC
+      responses:
+        '200':
+          description: 'List of reservations'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '422':
+          description: 'Validation error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem422'
+      security:
+        -
+          bearerAuth: []
+    post:
+      tags:
+        - reservations
+      summary: 'Create reservation'
+      operationId: createReservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationCreateRequest'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              description: 'URL of the new resource'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                properties:
+                  data: { $ref: '#/components/schemas/Reservation' }
+                  meta: { $ref: '#/components/schemas/MetaWithRuid' }
+                type: object
+        '400':
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem400'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '422':
+          description: 'Validation error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem422'
+      security:
+        -
+          bearerAuth: []
+  '/reservations/{id}':
+    get:
+      tags:
+        - reservations
+      summary: 'Get reservation by ID'
+      operationId: getReservation
+      parameters:
+        -
+          name: id
+          in: path
+          description: 'Reservation ID'
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  data: { $ref: '#/components/schemas/Reservation' }
+                  meta: { $ref: '#/components/schemas/MetaWithRuid' }
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '404':
+          description: 'Not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem404'
+      security:
+        -
+          bearerAuth: []
+    delete:
+      tags:
+        - reservations
+      summary: 'Delete reservation'
+      operationId: deleteReservation
+      parameters:
+        -
+          name: id
+          in: path
+          description: 'Reservation ID'
+          required: true
+          schema:
+            type: integer
+        -
+          name: deleteAllGroup
+          in: query
+          description: 'Delete all reservations in the group (if part of a group) `0 | 1`'
+          required: false
+          schema:
+            type: bool
+      responses:
+        '204':
+          description: 'Deleted successfully'
+          headers:
+            RUID:
+              description: 'Request unique identifier'
+              required: true
+              schema:
+                type: string
+                example: 01234567-89ab-cdef-0123-456789abcdef
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '404':
+          description: 'Not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem404'
+      security:
+        -
+          bearerAuth: []
+    patch:
+      tags:
+        - reservations
+      summary: 'Update reservation'
+      operationId: updateReservation
+      parameters:
+        -
+          name: id
+          in: path
+          description: 'Reservation ID'
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationUpdateRequest'
+      responses:
+        '200':
+          description: 'Updated successfully'
+          content:
+            application/json:
+              schema:
+                properties:
+                  data: { $ref: '#/components/schemas/Reservation' }
+                  meta: { $ref: '#/components/schemas/MetaWithRuid' }
+                type: object
+        '400':
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem400'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '404':
+          description: 'Not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem404'
+        '422':
+          description: 'Validation error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem422'
+      security:
+        -
+          bearerAuth: []
+  '/reservations/{id}/restore':
+    post:
+      tags:
+        - reservations
+      summary: 'Restore deleted reservation'
+      operationId: restoreReservation
+      parameters:
+        -
+          name: id
+          in: path
+          description: 'Reservation ID'
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 'Reservation restored successfully'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationRestoreResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '404':
+          description: 'Reservation not found or not deleted'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem404'
+        '409':
+          description: 'Conflict - reservation cannot be restored'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem409'
+      security:
+        -
+          bearerAuth: []
+  /room-types:
+    get:
+      tags:
+        - room-types
+      summary: 'Get all room types'
+      operationId: getRoomTypes
+      responses:
+        '200':
+          description: 'List of all available room types'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomTypesResponse'
+        '401':
+          description: 'Unauthorized - invalid or missing authentication token'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+      security:
+        -
+          bearerAuth: []
+  /rooms:
+    get:
+      tags:
+        - rooms
+      summary: 'List rooms (paginated)'
+      operationId: listRooms
+      parameters:
+        -
+          $ref: '#/components/parameters/PageParam'
+        -
+          $ref: '#/components/parameters/LimitParam'
+        -
+          name: name
+          in: query
+          description: 'Filter by partial room name (LIKE)'
+          required: false
+          schema:
+            type: string
+        -
+          name: description
+          in: query
+          description: 'Filter by partial description (default / any language key)'
+          required: false
+          schema:
+            type: string
+        -
+          name: equipment
+          in: query
+          description: 'Equipment list (OR). Example: ?equipment=balcony&equipment=television'
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - air_conditioning
+                - kitchenette
+                - television
+                - bathroom
+                - pool
+                - balcony
+                - washing_machine
+                - kitchen_utensils
+                - baby_crib
+                - blanket
+                - screen
+                - umbrella
+                - lounger
+                - clothes_hanger
+                - dryer
+                - towels
+                - floor_covering
+                - fireplace
+                - heating
+                - iron
+                - safe
+                - desk
+                - bidet
+                - toothbrush
+                - shampoo
+                - hair_conditioner
+                - soap
+                - radio
+                - table
+                - wine_glasses
+                - corkscrew
+                - water
+                - grill
+                - dishwasher
+                - minibar
+                - refrigerator
+                - coffee_machine
+        -
+          name: roomTypeId
+          in: query
+          description: 'Filter by room type ID'
+          required: false
+          schema:
+            type: integer
+        -
+          name: persons
+          in: query
+          description: 'Filter by base number of persons'
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+        -
+          name: maxAdults
+          in: query
+          description: 'Filter by max adults'
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+        -
+          name: maxChildren
+          in: query
+          description: 'Filter by max children'
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+        -
+          name: singleBed
+          in: query
+          description: 'Filter by number of single beds'
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+        -
+          name: doubleBed
+          in: query
+          description: 'Filter by number of double beds'
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+        -
+          name: extraBed
+          in: query
+          description: 'Filter by number of extra beds'
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+        -
+          name: isLocked
+          in: query
+          description: 'Whether room is locked (0/1)'
+          required: false
+          schema:
+            type: boolean
+        -
+          name: shareInOffer
+          in: query
+          description: 'Whether room is shared in offer (0/1)'
+          required: false
+          schema:
+            type: boolean
+        -
+          name: addDate
+          in: query
+          description: 'Filter by creation date (YYYY-MM-DD)'
+          required: false
+          schema:
+            type: string
+            format: date
+        -
+          name: editDate
+          in: query
+          description: 'Filter by last edit date (YYYY-MM-DD)'
+          required: false
+          schema:
+            type: string
+            format: date
+        -
+          name: lastEdit
+          in: query
+          description: 'Filter: edited since Unix timestamp'
+          required: false
+          schema:
+            type: integer
+        -
+          name: orderBy
+          in: query
+          description: 'Sort field'
+          required: false
+          schema:
+            type: string
+            default: roomId
+            enum:
+              - roomId
+              - name
+              - persons
+              - addDate
+              - editDate
+        -
+          name: orderType
+          in: query
+          description: 'Sort direction'
+          required: false
+          schema:
+            type: string
+            default: ASC
+            enum:
+              - ASC
+              - DESC
+      responses:
+        '200':
+          description: 'Room list'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '422':
+          description: 'Validation error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem422'
+      security:
+        -
+          bearerAuth: []
+    post:
+      tags:
+        - rooms
+      summary: 'Create room'
+      operationId: createRoom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomCreateRequest'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              description: 'URL of the new resource'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomCreateResponse'
+        '400':
+          description: 'Invalid data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem400'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '422':
+          description: 'Validation error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem422'
+      security:
+        -
+          bearerAuth: []
+  '/rooms/{id}':
+    get:
+      tags:
+        - rooms
+      summary: 'Get room by ID'
+      operationId: getRoom
+      parameters:
+        -
+          name: id
+          in: path
+          description: 'Room ID'
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '404':
+          description: 'Not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem404'
+      security:
+        -
+          bearerAuth: []
+    delete:
+      tags:
+        - rooms
+      summary: 'Delete room'
+      operationId: deleteRoom
+      parameters:
+        -
+          name: id
+          in: path
+          description: 'Room ID'
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deleted
+          headers:
+            RUID:
+              description: 'Request unique identifier'
+              required: true
+              schema:
+                type: string
+                example: 01234567-89ab-cdef-0123-456789abcdef
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '404':
+          description: 'Not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem404'
+      security:
+        -
+          bearerAuth: []
+    patch:
+      tags:
+        - rooms
+      summary: 'Update room'
+      operationId: updateRoom
+      parameters:
+        -
+          name: id
+          in: path
+          description: 'Room ID'
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomUpdateRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+        '400':
+          description: 'Invalid data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem400'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+        '404':
+          description: 'Not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem404'
+        '422':
+          description: 'Validation error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem422'
+      security:
+        -
+          bearerAuth: []
+  /sources:
+    get:
+      tags:
+        - sources
+      summary: 'Get all booking sources'
+      operationId: getSources
+      responses:
+        '200':
+          description: 'List of all available booking sources'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcesResponse'
+        '401':
+          description: 'Unauthorized - invalid or missing authentication token'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem401'
+      security:
+        -
+          bearerAuth: []
+components:
+  schemas:
+    TokenRequest:
+      description: 'Client credentials for obtaining JWT. `scope` is optional.'
+      required:
+        - clientId
+        - clientSecret
+      properties:
+        clientId:
+          type: string
+          example: user_123_484ur4893ur398ru...
+        clientSecret:
+          type: string
+          example: password123
+      type: object
+    TokenResponse:
+      description: 'JWT token for use in Authorization header.'
+      required:
+        - access_token
+        - token_type
+        - expires_in
+      properties:
+        access_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          example: 3600
+        scope:
+          type: array
+          items:
+            type: string
+          example:
+            - 'reservations:read'
+            - 'reservations:write'
+      type: object
+    AvailabilityDay:
+      description: 'Daily availability for a specific date'
+      required:
+        - date
+        - roomsToSell
+      properties:
+        date:
+          type: string
+          format: date
+          example: '2024-07-01'
+        roomsToSell:
+          description: 'Number of rooms available for sale on this date'
+          type: integer
+          example: 1
+      type: object
+    RoomAvailability:
+      description: 'Availability data for a specific room'
+      required:
+        - roomId
+        - availability
+      properties:
+        roomId:
+          type: integer
+          example: 101
+        availability:
+          description: 'Daily availability for the requested date range'
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityDay'
+      type: object
+    AvailabilityResponse:
+      description: 'Room availability response for specified date range'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: 'Availability data for all requested rooms'
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomAvailability'
+        meta:
+          $ref: '#/components/schemas/MetaWithRuid'
+      type: object
+    AvailabilityQueryParams:
+      description: 'Query parameters for availability endpoint'
+      required:
+        - from
+        - to
+      properties:
+        roomId:
+          description: 'Array of room IDs to check availability for. If not provided, returns all rooms.'
+          type: array
+          items:
+            type: integer
+          example:
+            - 101
+            - 102
+            - 103
+        from:
+          description: 'Start date for availability check (inclusive)'
+          type: string
+          format: date
+          example: '2024-07-01'
+        to:
+          description: "End date for availability check (inclusive). Maximum 90 days from 'from' date."
+          type: string
+          format: date
+          example: '2024-07-31'
+        includeRates:
+          description: 'Whether to include rate information in the response'
+          type: boolean
+          example: false
+      type: object
+    Client:
+      description: 'Client information'
+      required:
+        - clientId
+        - name
+      properties:
+        clientId:
+          type: integer
+          example: 362723
+        forename:
+          type: string
+          example: John
+        name:
+          type: string
+          example: Doe
+        phone:
+          type: string
+          example: '+48123456789'
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        companyName:
+          type: string
+          example: 'ABC Company Ltd'
+          nullable: true
+        taxId:
+          type: string
+          example: '1234567890'
+          nullable: true
+        personalId:
+          type: string
+          example: '90010112345'
+          nullable: true
+        idCard:
+          type: string
+          example: ABC123456
+          nullable: true
+        clientType:
+          type: string
+          enum:
+            - NONE
+            - REGULAR
+            - UNWANTED
+          example: REGULAR
+        address:
+          type: string
+          example: '123 Main Street, Warsaw, Poland'
+          nullable: true
+        comments:
+          type: string
+          example: 'VIP client'
+          nullable: true
+        vehicleRegistrationNumber:
+          type: string
+          example: 'WA 12345'
+          nullable: true
+        countryId:
+          type: integer
+          example: 1
+          nullable: true
+        lang:
+          description: 'Language preference (ISO 639-1)'
+          type: string
+          example: en
+      type: object
+    ClientCreateRequest:
+      description: 'Create client request'
+      required:
+        - name
+      properties:
+        forename:
+          type: string
+          example: John
+        name:
+          type: string
+          example: Doe
+        phone:
+          type: string
+          example: '+48123456789'
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        companyName:
+          type: string
+          example: 'ABC Company Ltd'
+          nullable: true
+        taxId:
+          type: string
+          example: '1234567890'
+          nullable: true
+        personalId:
+          type: string
+          example: '90010112345'
+          nullable: true
+        idCard:
+          type: string
+          example: ABC123456
+          nullable: true
+        clientType:
+          type: string
+          enum:
+            - NONE
+            - REGULAR
+            - UNWANTED
+          example: REGULAR
+        address:
+          type: string
+          example: '123 Main Street, Warsaw, Poland'
+          nullable: true
+        comments:
+          type: string
+          example: 'VIP client'
+          nullable: true
+        vehicleRegistrationNumber:
+          type: string
+          example: 'WA 12345'
+          nullable: true
+        countryId:
+          type: integer
+          example: 1
+          nullable: true
+        lang:
+          description: 'Language preference (ISO 639-1)'
+          type: string
+          example: en
+      type: object
+    ClientUpdateRequest:
+      description: 'Update client request - all fields are optional'
+      required:
+        - clientId
+        - name
+      properties:
+        forename:
+          type: string
+          example: John
+        name:
+          type: string
+          example: Doe
+        phone:
+          type: string
+          example: '+48123456789'
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        companyName:
+          type: string
+          example: 'ABC Company Ltd'
+          nullable: true
+        taxId:
+          type: string
+          example: '1234567890'
+          nullable: true
+        personalId:
+          type: string
+          example: '90010112345'
+          nullable: true
+        idCard:
+          type: string
+          example: ABC123456
+          nullable: true
+        clientType:
+          type: string
+          enum:
+            - NONE
+            - REGULAR
+            - UNWANTED
+          example: REGULAR
+        address:
+          type: string
+          example: '123 Main Street, Warsaw, Poland'
+          nullable: true
+        comments:
+          type: string
+          example: 'VIP client'
+          nullable: true
+        vehicleRegistrationNumber:
+          type: string
+          example: 'WA 12345'
+          nullable: true
+        countryId:
+          type: integer
+          example: 1
+          nullable: true
+        lang:
+          description: 'Language preference (ISO 639-1)'
+          type: string
+          example: en
+      type: object
+    ClientListResponse:
+      description: 'List of clients'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Client'
+        meta:
+          $ref: '#/components/schemas/MetaWithPagination'
+      type: object
+    ClientResponse:
+      description: 'Single client response with metadata'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/Client'
+        meta:
+          $ref: '#/components/schemas/MetaWithRuid'
+      type: object
+    ClientCreateResponse:
+      description: 'Created client response with metadata'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/Client'
+        meta:
+          $ref: '#/components/schemas/MetaWithRuid'
+      type: object
+    Pagination:
+      description: 'Pagination parameters in list responses.'
+      required:
+        - totalItems
+        - currentPage
+        - totalPages
+        - itemsPerPage
+      properties:
+        totalItems:
+          type: integer
+          minimum: 0
+          example: 25
+        currentPage:
+          type: integer
+          minimum: 1
+          example: 1
+        totalPages:
+          type: integer
+          minimum: 0
+          example: 1
+        itemsPerPage:
+          type: integer
+          minimum: 1
+          example: 50
+      type: object
+    MetaWithPagination:
+      description: 'Pagination parameters with request tracking in list responses.'
+      required:
+        - totalItems
+        - currentPage
+        - totalPages
+        - itemsPerPage
+        - ruid
+      properties:
+        totalItems:
+          type: integer
+          minimum: 0
+          example: 25
+        currentPage:
+          type: integer
+          minimum: 1
+          example: 1
+        totalPages:
+          type: integer
+          minimum: 0
+          example: 1
+        itemsPerPage:
+          type: integer
+          minimum: 1
+          example: 50
+        ruid:
+          description: 'Request Unique ID'
+          type: string
+          format: uuid
+          example: 01234567-89ab-cdef-0123-456789abcdef
+      type: object
+    MetaWithRuid:
+      description: 'Metadata with request tracking.'
+      required:
+        - ruid
+      properties:
+        ruid:
+          description: 'Request Unique ID'
+          type: string
+          format: uuid
+          example: 01234567-89ab-cdef-0123-456789abcdef
+      type: object
+    ErrorValue:
+      description: 'Single error message or list of messages.'
+      example: Required
+      oneOf:
+        -
+          description: "Error value in error map can be:\n- single string, or\n- array of strings (multiple messages for one field)."
+          type: string
+        -
+          type: array
+          items:
+            type: string
+    ApiProblemBase:
+      description: 'RFC 7807 Problem Details (base schema).'
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+      properties:
+        type:
+          description: "RFC 7807 base — DO NOT use directly in endpoints.\nIn endpoints reference ApiProblem400/401/403/409/422/429/500."
+          type: string
+          format: uri
+          example: 'https://api.mobile-calendar.com/problems/bad-request'
+        title:
+          type: string
+          example: 'Bad Request'
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: 'The request is invalid.'
+        instance:
+          type: string
+          example: /v1/public/reservations
+      type: object
+    ApiProblem400:
+      description: 'Request syntax/format error.'
+      allOf:
+        -
+          $ref: '#/components/schemas/ApiProblemBase'
+        -
+          properties:
+            type:
+              description: '400 Bad Request'
+              type: string
+              format: uri
+              example: 'https://api.mobile-calendar.com/problems/bad-request'
+            title:
+              type: string
+              example: 'Bad Request'
+            status:
+              type: integer
+              example: 400
+            detail:
+              type: string
+              example: 'Payload is invalid or contains unknown fields.'
+            instance:
+              type: string
+              example: /v1/public/auth/token
+          type: object
+          example:
+            type: 'https://api.mobile-calendar.com/problems/bad-request'
+            title: 'Bad Request'
+            status: 400
+            detail: 'Missing required fields: `username`'
+            instance: /v1/public/auth/token
+    ApiProblem401:
+      description: 'Missing authentication or invalid credentials.'
+      allOf:
+        -
+          $ref: '#/components/schemas/ApiProblemBase'
+        -
+          properties:
+            type:
+              description: '401 Unauthorized'
+              type: string
+              format: uri
+              example: 'https://api.mobile-calendar.com/problems/unauthorized'
+            title:
+              type: string
+              example: Unauthorized
+            status:
+              type: integer
+              example: 401
+            detail:
+              type: string
+              example: 'Missing Authorization header or token is invalid/expired.'
+            instance:
+              type: string
+              example: /v1/public/reservations
+          type: object
+          example:
+            type: 'https://api.mobile-calendar.com/problems/unauthorized'
+            title: Unauthorized
+            status: 401
+            detail: 'Missing or invalid Bearer token.'
+            instance: /v1/public/reservations
+    ApiProblem403:
+      description: 'Authenticated user but no access.'
+      allOf:
+        -
+          $ref: '#/components/schemas/ApiProblemBase'
+        -
+          properties:
+            type:
+              description: '403 Forbidden'
+              type: string
+              format: uri
+              example: 'https://api.mobile-calendar.com/problems/forbidden'
+            title:
+              type: string
+              example: Forbidden
+            status:
+              type: integer
+              example: 403
+            detail:
+              type: string
+              example: 'Missing required permissions or scopes.'
+            instance:
+              type: string
+              example: /v1/public/reservations
+          type: object
+          example:
+            type: 'https://api.mobile-calendar.com/problems/forbidden'
+            title: Forbidden
+            status: 403
+            detail: 'Required scope `reservations:read` is not available for this API account.'
+            instance: /v1/public/reservations
+    ApiProblem404:
+      description: 'Resource specified in the request was not found.'
+      allOf:
+        -
+          $ref: '#/components/schemas/ApiProblemBase'
+        -
+          properties:
+            type:
+              description: '404 Not Found'
+              type: string
+              format: uri
+              example: 'https://api.mobile-calendar.com/problems/not-found'
+            title:
+              type: string
+              example: 'Not Found'
+            status:
+              type: integer
+              example: 404
+            detail:
+              type: string
+              example: 'The requested resource does not exist or has been removed.'
+            instance:
+              type: string
+              example: /v1/public/reservations/123456
+          type: object
+          example:
+            type: 'https://api.mobile-calendar.com/problems/not-found'
+            title: 'Not Found'
+            status: 404
+            detail: 'Reservation with id=123456 not found.'
+            instance: /v1/public/reservations/123456
+    ApiProblem409:
+      description: 'Conflict with resource state or integrity constraints.'
+      allOf:
+        -
+          $ref: '#/components/schemas/ApiProblemBase'
+        -
+          properties:
+            type:
+              description: '409 Conflict'
+              type: string
+              format: uri
+              example: 'https://api.mobile-calendar.com/problems/conflict'
+            title:
+              type: string
+              example: Conflict
+            status:
+              type: integer
+              example: 409
+            detail:
+              type: string
+              example: 'Resource state conflicts with the request.'
+            instance:
+              type: string
+              example: /v1/public/reservations
+          type: object
+          example:
+            type: 'https://api.mobile-calendar.com/problems/conflict'
+            title: Conflict
+            status: 409
+            detail: 'Reservation for these dates and room already exists.'
+            instance: /v1/public/reservations
+            errors:
+              reservationNo: 'Already exists'
+    ApiProblem422:
+      description: 'Input data validation error.'
+      allOf:
+        -
+          $ref: '#/components/schemas/ApiProblemBase'
+        -
+          properties:
+            type:
+              description: '422 Unprocessable Entity (validation)'
+              type: string
+              format: uri
+              example: 'https://api.mobile-calendar.com/problems/validation-error'
+            title:
+              type: string
+              example: 'Validation failed'
+            status:
+              type: integer
+              example: 422
+            detail:
+              type: string
+              example: 'Some fields failed validation.'
+            instance:
+              type: string
+              example: /v1/public/reservations
+            errors:
+              description: 'Map: field name → error message(s)'
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/ErrorValue'
+          type: object
+          example:
+            type: 'https://api.mobile-calendar.com/problems/validation-error'
+            title: 'Unprocessable Entity'
+            status: 422
+            detail: 'Validation error'
+            instance: /v1/public/reservations
+            ruid: 01234567-89ab-cdef-0123-456789abcdef
+            errors:
+              arrival: 'arrival wrong format, correct: Y-m-d'
+    ApiProblem429:
+      description: 'API rate limit exceeded.'
+      allOf:
+        -
+          $ref: '#/components/schemas/ApiProblemBase'
+        -
+          properties:
+            type:
+              description: '429 Too Many Requests'
+              type: string
+              format: uri
+              example: 'https://api.mobile-calendar.com/problems/rate-limit'
+            title:
+              type: string
+              example: 'Too Many Requests'
+            status:
+              type: integer
+              example: 429
+            detail:
+              type: string
+              example: 'Rate limit exceeded. Try again later.'
+            instance:
+              type: string
+              example: /v1/public/reservations
+          type: object
+          example:
+            type: 'https://api.mobile-calendar.com/problems/rate-limit'
+            title: 'Too Many Requests'
+            status: 429
+            detail: 'Rate limit exceeded. Retry after the time specified in response headers.'
+            instance: /v1/public/reservations
+    ApiProblem500:
+      description: 'Unexpected server-side error.'
+      allOf:
+        -
+          $ref: '#/components/schemas/ApiProblemBase'
+        -
+          properties:
+            type:
+              description: '500 Internal Server Error'
+              type: string
+              format: uri
+              example: 'https://api.mobile-calendar.com/problems/internal-error'
+            title:
+              type: string
+              example: 'Internal Server Error'
+            status:
+              type: integer
+              example: 500
+            detail:
+              type: string
+              example: 'An unexpected error occurred.'
+            instance:
+              type: string
+              example: /v1/public/reservations
+          type: object
+          example:
+            type: 'https://api.mobile-calendar.com/problems/internal-error'
+            title: 'Internal Server Error'
+            status: 500
+            detail: 'An unexpected error occurred. Contact support and provide RUID.'
+            instance: /v1/public/reservations
+    Invoice:
+      description: 'Invoice with buyer, seller, receiver data and invoice items'
+      required:
+        - invoiceId
+        - invoiceNo
+        - invoiceFullNo
+        - invoiceType
+        - buyer
+        - seller
+        - receiver
+        - invoiceItems
+        - paymentType
+        - paymentStatus
+        - issueDate
+        - saleDate
+        - paymentDate
+        - currency
+      properties:
+        invoiceId:
+          type: integer
+          example: 12345
+        invoiceNo:
+          type: integer
+          example: 15
+        invoiceFullNo:
+          type: string
+          example: 15/10/2024
+        format:
+          type: string
+          example: NUMBER/MM/YYYY
+        extraChar:
+          type: string
+          example: INV-
+        invoiceType:
+          description: 'Invoice type: 0=Standard Invoice, 1=VAT Invoice, 2=Pro Forma Invoice, 3=Advance Invoice, 4=Correction Invoice, 5=VAT Exempt Invoice, 6=Advance Receipt, 7=Correction Receipt'
+          type: integer
+          enum:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+          example: 1
+        buyer:
+          properties:
+            companyName:
+              type: string
+              example: 'ABC Company Ltd.'
+            address:
+              type: string
+              example: "123 Main Street\nLondon SW1A 1AA\nUnited Kingdom"
+            taxId:
+              type: string
+              example: GB123456789
+          type: object
+        seller:
+          properties:
+            companyName:
+              type: string
+              example: 'Paradise Hotel Ltd.'
+            address:
+              type: string
+              example: "1 Hotel Avenue\nLondon W1K 1AA\nUnited Kingdom"
+            taxId:
+              type: string
+              example: GB987654321
+            bankNo:
+              type: string
+              example: 'GB33 BUKB 2020 1555 5555 55'
+          type: object
+        receiver:
+          properties:
+            companyName:
+              type: string
+              example: 'ABC Company Ltd.'
+            address:
+              type: string
+              example: "456 Delivery Street\nLondon SW2B 2BB\nUnited Kingdom"
+            taxId:
+              type: string
+              example: GB123456789
+            bankNo:
+              type: string
+              example: 'GB29 NWBK 6016 1331 9268 19'
+          type: object
+        invoiceItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceItem'
+        paymentType:
+          description: 'Payment method: 0=None, 1=Cash, 2=Bank Transfer, 3=Credit Card, 4=Virtual Card, 5=Online Payment'
+          type: integer
+          enum:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+          example: 1
+        paymentStatus:
+          description: 'Payment status: 0=Unpaid, 1=Partially Paid, 2=Fully Paid'
+          type: integer
+          enum:
+            - 0
+            - 1
+            - 2
+          example: 0
+        issueDate:
+          type: string
+          format: date
+          example: '2024-10-15'
+        saleDate:
+          type: string
+          format: date
+          example: '2024-10-15'
+        town:
+          type: string
+          example: London
+        paymentDate:
+          type: string
+          format: date
+          example: '2024-10-29'
+        currency:
+          type: string
+          example: GBP
+        additionalInfo:
+          type: string
+          example: 'Payment by bank transfer to the account specified above'
+          nullable: true
+        personCollect:
+          type: string
+          example: 'John Smith'
+          nullable: true
+        personIssue:
+          type: string
+          example: 'Jane Doe'
+          nullable: true
+        clientId:
+          type: integer
+          example: 789
+          nullable: true
+        reservationId:
+          type: integer
+          example: 456
+          nullable: true
+        addDate:
+          type: string
+          format: date-time
+          example: '2024-10-15T10:30:00.000Z'
+        editDate:
+          type: string
+          format: date-time
+          example: '2024-10-15T14:25:00.000Z'
+      type: object
+    InvoiceItem:
+      description: 'Invoice item - single position on invoice'
+      required:
+        - invoiceId
+        - positionId
+        - userId
+        - status
+        - name
+        - grossUnitPrice
+        - quantity
+        - unit
+        - rate
+        - symbol
+      properties:
+        invoiceId:
+          type: integer
+          example: 12345
+        positionId:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 123
+        status:
+          type: integer
+          enum:
+            - 0
+            - 1
+          example: 1
+        name:
+          type: string
+          example: 'Hotel accommodation - double room'
+        grossUnitPrice:
+          type: number
+          format: float
+          example: 150
+        quantity:
+          type: number
+          format: float
+          example: 2
+        unit:
+          type: string
+          example: pcs
+        rate:
+          type: string
+          example: '20'
+        symbol:
+          type: string
+          example: '7'
+      type: object
+    InvoiceCreateRequest:
+      description: 'Create invoice request payload'
+      required:
+        - invoiceType
+        - companyNameBuyer
+        - addressBuyer
+        - taxIdBuyer
+        - companyNameSeller
+        - addressSeller
+        - taxIdSeller
+        - paymentType
+        - paymentStatus
+        - issueDate
+        - saleDate
+        - paymentDate
+        - currency
+        - items
+      properties:
+        invoiceType:
+          description: 'Invoice type: 0=Standard Invoice, 1=VAT Invoice, 2=Pro Forma Invoice, 3=Advance Invoice, 4=Correction Invoice, 5=VAT Exempt Invoice, 6=Advance Receipt, 7=Correction Receipt'
+          type: integer
+          enum:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+          example: 1
+        format:
+          type: string
+          example: NUMBER/MM/YYYY
+        extraChar:
+          type: string
+          example: INV-
+        companyNameBuyer:
+          type: string
+          example: 'ABC Company Ltd.'
+        addressBuyer:
+          type: string
+          example: "123 Main Street\nLondon SW1A 1AA\nUnited Kingdom"
+        taxIdBuyer:
+          type: string
+          example: GB123456789
+        companyNameSeller:
+          type: string
+          example: 'Paradise Hotel Ltd.'
+        addressSeller:
+          type: string
+          example: "1 Hotel Avenue\nLondon W1K 1AA\nUnited Kingdom"
+        taxIdSeller:
+          type: string
+          example: GB987654321
+        bankNoSeller:
+          type: string
+          example: 'GB33 BUKB 2020 1555 5555 55'
+        companyNameReceiver:
+          type: string
+          example: 'ABC Company Ltd.'
+          nullable: true
+        addressReceiver:
+          type: string
+          example: "456 Delivery Street\nLondon SW2B 2BB\nUnited Kingdom"
+          nullable: true
+        taxIdReceiver:
+          type: string
+          example: GB123456789
+          nullable: true
+        bankNoReceiver:
+          type: string
+          example: 'GB29 NWBK 6016 1331 9268 19'
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceItemCreateRequest'
+          minItems: 1
+        paymentType:
+          description: 'Payment method: 0=None, 1=Cash, 2=Bank Transfer, 3=Credit Card, 4=Virtual Card, 5=Online Payment'
+          type: integer
+          enum:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+          example: 1
+        paymentStatus:
+          description: 'Payment status: 0=Unpaid, 1=Partially Paid, 2=Fully Paid'
+          type: integer
+          enum:
+            - 0
+            - 1
+            - 2
+          example: 0
+        issueDate:
+          type: string
+          format: date
+          example: '2024-10-15'
+        saleDate:
+          type: string
+          format: date
+          example: '2024-10-15'
+        town:
+          type: string
+          example: London
+        paymentDate:
+          type: string
+          format: date
+          example: '2024-10-29'
+        currency:
+          type: string
+          example: GBP
+        additionalInfo:
+          type: string
+          example: 'Payment by bank transfer to the account specified above'
+          nullable: true
+        personCollect:
+          type: string
+          example: 'John Smith'
+          nullable: true
+        personIssue:
+          type: string
+          example: 'Jane Doe'
+          nullable: true
+        clientId:
+          type: integer
+          example: 789
+          nullable: true
+        reservationId:
+          type: integer
+          example: 456
+          nullable: true
+        customNumber:
+          description: 'Custom invoice number, if not provided - auto generated'
+          type: integer
+          example: 15
+          nullable: true
+        gtuCodes:
+          type: string
+          example: 'GTU_01,GTU_03'
+          nullable: true
+        prepaymentId:
+          type: array
+          items:
+            type: integer
+          example:
+            - 123
+            - 124
+          nullable: true
+        correctionId:
+          type: integer
+          example: 111
+          nullable: true
+      type: object
+    InvoiceItemCreateRequest:
+      description: 'Invoice item create request'
+      required:
+        - name
+        - grossUnitPrice
+        - quantity
+        - unit
+        - rate
+        - symbol
+      properties:
+        name:
+          type: string
+          example: 'Hotel accommodation - double room'
+        grossUnitPrice:
+          type: number
+          format: float
+          example: 150
+        quantity:
+          type: number
+          format: float
+          example: 2
+        unit:
+          type: string
+          example: pcs
+        rate:
+          type: string
+          example: '20'
+        symbol:
+          type: string
+          example: '7'
+      type: object
+    InvoiceUpdateRequest:
+      description: 'Update invoice request payload - all fields optional'
+      properties:
+        invoiceType:
+          description: 'Invoice type: 0=Standard Invoice, 1=VAT Invoice, 2=Pro Forma Invoice, 3=Advance Invoice, 4=Correction Invoice, 5=VAT Exempt Invoice, 6=Advance Receipt, 7=Correction Receipt'
+          type: integer
+          enum:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+          example: 1
+        extraChar:
+          type: string
+          example: INV-
+        companyNameBuyer:
+          type: string
+          example: 'ABC Company Ltd.'
+        addressBuyer:
+          type: string
+          example: "123 Main Street\nLondon SW1A 1AA\nUnited Kingdom"
+        taxIdBuyer:
+          type: string
+          example: GB123456789
+        companyNameSeller:
+          type: string
+          example: 'Paradise Hotel Ltd.'
+        addressSeller:
+          type: string
+          example: "1 Hotel Avenue\nLondon W1K 1AA\nUnited Kingdom"
+        taxIdSeller:
+          type: string
+          example: GB987654321
+        bankNoSeller:
+          type: string
+          example: 'GB33 BUKB 2020 1555 5555 55'
+        companyNameReceiver:
+          type: string
+          example: 'ABC Company Ltd.'
+          nullable: true
+        addressReceiver:
+          type: string
+          example: "456 Delivery Street\nLondon SW2B 2BB\nUnited Kingdom"
+          nullable: true
+        taxIdReceiver:
+          type: string
+          example: GB123456789
+          nullable: true
+        bankNoReceiver:
+          type: string
+          example: 'GB29 NWBK 6016 1331 9268 19'
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceItemUpdateRequest'
+          nullable: true
+        paymentType:
+          description: 'Payment method: 0=None, 1=Cash, 2=Bank Transfer, 3=Credit Card, 4=Virtual Card, 5=Online Payment'
+          type: integer
+          enum:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+          example: 1
+        paymentStatus:
+          description: 'Payment status: 0=Unpaid, 1=Partially Paid, 2=Fully Paid'
+          type: integer
+          enum:
+            - 0
+            - 1
+            - 2
+          example: 0
+        issueDate:
+          type: string
+          format: date
+          example: '2024-10-15'
+        saleDate:
+          type: string
+          format: date
+          example: '2024-10-15'
+        town:
+          type: string
+          example: London
+        paymentDate:
+          type: string
+          format: date
+          example: '2024-10-29'
+        currency:
+          type: string
+          example: GBP
+        additionalInfo:
+          type: string
+          example: 'Payment by bank transfer to the account specified above'
+          nullable: true
+        personCollect:
+          type: string
+          example: 'John Smith'
+          nullable: true
+        personIssue:
+          type: string
+          example: 'Jane Doe'
+          nullable: true
+        clientId:
+          type: integer
+          example: 789
+          nullable: true
+        reservationId:
+          type: integer
+          example: 456
+          nullable: true
+        gtuCodes:
+          type: string
+          example: 'GTU_01,GTU_03'
+          nullable: true
+        prepaymentId:
+          type: array
+          items:
+            type: integer
+          example:
+            - 123
+            - 124
+          nullable: true
+      type: object
+    InvoiceItemUpdateRequest:
+      description: 'Invoice item update request'
+      properties:
+        positionId:
+          description: 'If provided - updates existing item, if null - creates new item'
+          type: integer
+          example: 1
+          nullable: true
+        name:
+          type: string
+          example: 'Hotel accommodation - double room'
+        grossUnitPrice:
+          type: number
+          format: float
+          example: 150
+        quantity:
+          type: number
+          format: float
+          example: 2
+        unit:
+          type: string
+          example: pcs
+        rate:
+          type: string
+          example: '20'
+        symbol:
+          type: string
+          example: '7'
+      type: object
+    InvoiceListResponse:
+      description: 'Paginated list of invoices'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Invoice'
+        meta:
+          $ref: '#/components/schemas/MetaWithPagination'
+      type: object
+    InvoiceResponse:
+      description: 'Single invoice response'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/Invoice'
+        meta:
+          $ref: '#/components/schemas/MetaWithRuid'
+      type: object
+    InvoiceCreateResponse:
+      description: 'Created invoice response with Location header'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/Invoice'
+        meta:
+          $ref: '#/components/schemas/MetaWithRuid'
+      type: object
+    OccupancyPrice:
+      description: 'Price for specific number of persons'
+      required:
+        - persons
+        - price
+      properties:
+        persons:
+          description: 'Number of persons'
+          type: integer
+          example: 2
+        price:
+          description: 'Price for this occupancy level'
+          type: number
+          format: float
+          example: 840.5
+      type: object
+    PriceRestrictions:
+      description: 'Booking restrictions for a specific date'
+      properties:
+        minStay:
+          description: 'Minimum stay requirement in nights'
+          type: integer
+          example: 3
+          nullable: true
+        maxStay:
+          description: 'Maximum stay allowed in nights'
+          type: integer
+          example: 14
+          nullable: true
+        closed:
+          description: 'Whether this date is closed for bookings (0=open, 1=closed)'
+          type: integer
+          example: 0
+        availArrival:
+          description: 'Whether arrival is allowed on this date (0=no, 1=yes)'
+          type: integer
+          example: 1
+        availDeparture:
+          description: 'Whether departure is allowed on this date (0=no, 1=yes)'
+          type: integer
+          example: 1
+        minAdvanceRes:
+          description: 'Minimum advance reservation days'
+          type: integer
+          example: 1
+          nullable: true
+        maxAdvanceRes:
+          description: 'Maximum advance reservation days'
+          type: integer
+          example: 365
+          nullable: true
+      type: object
+    DailyPrice:
+      description: 'Price information for a specific date'
+      required:
+        - date
+        - basePrice
+      properties:
+        date:
+          type: string
+          format: date
+          example: '2025-12-28'
+        basePrice:
+          description: 'Base price for the leading occupancy'
+          type: number
+          format: float
+          example: 1200
+        restrictions:
+          oneOf:
+            -
+              $ref: '#/components/schemas/PriceRestrictions'
+          nullable: true
+          description: 'Booking restrictions for this date'
+        derivedPrices:
+          description: 'Prices for different occupancy levels'
+          type: array
+          items:
+            $ref: '#/components/schemas/OccupancyPrice'
+          nullable: true
+      type: object
+    Rate:
+      description: 'Rate information with cancellation policy'
+      required:
+        - rateId
+        - name
+      properties:
+        rateId:
+          type: integer
+          example: 58
+        name:
+          description: 'Rate name'
+          type: string
+          example: Standard
+        parentRateId:
+          description: 'Parent rate ID for derived rates'
+          type: integer
+          example: null
+          nullable: true
+        percentage:
+          description: 'Percentage modifier from parent rate'
+          type: number
+          format: float
+          example: null
+          nullable: true
+        cancellationPolicy:
+          oneOf:
+            -
+              $ref: '#/components/schemas/CancellationPolicy'
+          nullable: true
+          description: 'Cancellation policy for this rate'
+      type: object
+    PricingEntry:
+      description: 'Pricing entry for a specific room or room type with rate'
+      properties:
+        roomId:
+          description: 'Room ID (null for room type pricing)'
+          type: integer
+          example: 30264
+          nullable: true
+        typeId:
+          description: 'Room type ID (null for individual room pricing)'
+          type: integer
+          example: 33
+          nullable: true
+        prices:
+          description: 'Daily prices for the requested date range'
+          type: array
+          items:
+            $ref: '#/components/schemas/DailyPrice'
+        rate:
+          $ref: '#/components/schemas/Rate'
+      type: object
+    PricingResponse:
+      description: 'Pricing response for specified date range, rooms/types, and rates'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: 'Pricing data for all requested rooms/types and rates'
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingEntry'
+        meta:
+          $ref: '#/components/schemas/MetaWithRuid'
+      type: object
+    RateRelation:
+      description: 'Rate relation configuration - either percentage or additional amount'
+      properties:
+        percentage:
+          description: 'Percentage modifier from parent rate'
+          type: integer
+          example: 115
+          nullable: true
+        additional:
+          description: 'Additional amount to parent rate'
+          type: number
+          format: float
+          example: 199
+          nullable: true
+      type: object
+    CancellationPolicy:
+      description: 'Cancellation policy details'
+      required:
+        - cancellationId
+        - type
+      properties:
+        cancellationId:
+          type: integer
+          example: 19
+        type:
+          type: string
+          enum:
+            - REFUNDABLE
+            - NONREFUNDABLE
+          example: REFUNDABLE
+        cancellationPenaltyPercentageAfterDeadline:
+          description: 'Penalty percentage after deadline'
+          type: integer
+          example: 50
+          nullable: true
+        deadlineDays:
+          description: 'Deadline in days before arrival'
+          type: integer
+          example: 7
+          nullable: true
+        deadlineHours:
+          description: 'Deadline in hours before arrival'
+          type: integer
+          example: null
+          nullable: true
+        cancellationPenaltyNightsAfterDeadline:
+          description: 'Penalty in nights after deadline'
+          type: integer
+          example: null
+          nullable: true
+        noShow:
+          description: 'No-show policy'
+          type: string
+          example: DEFAULT
+        prepaymentPercentage:
+          description: 'Required prepayment percentage'
+          type: integer
+          example: 50
+          nullable: true
+        prepaymentFirstNight:
+          description: 'Whether prepayment covers first night only'
+          type: boolean
+          example: false
+      type: object
+    RateEntry:
+      description: 'Rate configuration with pricing rules and restrictions'
+      required:
+        - rateId
+        - name
+        - cancellationId
+        - meals
+      properties:
+        rateId:
+          description: 'Unique rate identifier'
+          type: integer
+          example: 58
+        name:
+          description: 'Rate name'
+          type: string
+          example: Standard
+        cancellationId:
+          description: 'Cancellation policy ID'
+          type: integer
+          example: 19
+        meals:
+          description: 'Meal plan type: 0=OV, 1=BB, 2=HB, 3=FB, 4=AI, 5=DINNER, 6=BREAKFAST_SUPPER, 7=DINNER_SUPPER, 8=SUPPER'
+          type: integer
+          example: 1
+        parentRateId:
+          description: 'Parent rate ID for derived rates'
+          type: integer
+          example: null
+          nullable: true
+        rateRelation:
+          oneOf:
+            -
+              $ref: '#/components/schemas/RateRelation'
+          nullable: true
+          description: 'Rate relation configuration (only for derived rates)'
+        rooms:
+          description: 'Room IDs this rate applies to. null=all rooms, []=no rooms, [ids]=specific rooms'
+          type: array
+          items:
+            type: integer
+          example:
+            - 30265
+            - 30266
+          nullable: true
+        types:
+          description: 'Room type IDs this rate applies to. null=all types, []=no types, [ids]=specific types'
+          type: array
+          items:
+            type: integer
+          example:
+            - 31
+            - 32
+          nullable: true
+        cancellationPolicy:
+          $ref: '#/components/schemas/CancellationPolicy'
+      type: object
+    RatesResponse:
+      description: 'Response containing all available rates'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: 'List of all available rates'
+          type: array
+          items:
+            $ref: '#/components/schemas/RateEntry'
+        meta:
+          $ref: '#/components/schemas/MetaWithRuid'
+      type: object
+    Reservation:
+      description: "Universal reservation object - can be lock, single reservation or group reservation based on 'type' field"
+      required:
+        - type
+        - reservationId
+        - addDate
+        - editDate
+      properties:
+        type:
+          type: string
+          enum:
+            - LOCK
+            - SINGLE
+            - GROUP
+          example: SINGLE
+        reservationId:
+          type: integer
+          example: 478535
+        employeeId:
+          type: integer
+          example: null
+          nullable: true
+        sourceId:
+          type: integer
+          example: 0
+        additionalInfo:
+          type: string
+          example: 'Will arrive with dog'
+          nullable: true
+        addDate:
+          type: string
+          format: date-time
+          example: '2025-09-28T10:12:33Z'
+        editDate:
+          type: string
+          format: date-time
+          example: '2025-09-28T11:15:45Z'
+        clientId:
+          description: 'Required for SINGLE/GROUP types'
+          type: integer
+          example: 362723
+          nullable: true
+        reservationNo:
+          type: integer
+          example: 146
+          nullable: true
+        groupId:
+          type: integer
+          example: null
+          nullable: true
+        arrival:
+          description: 'Required for SINGLE/GROUP types'
+          type: string
+          format: date
+          example: '2025-10-01'
+          nullable: true
+        departure:
+          description: 'Required for SINGLE/GROUP types'
+          type: string
+          format: date
+          example: '2025-10-03'
+          nullable: true
+        roomId:
+          type: integer
+          example: 30268
+          nullable: true
+        checkIn:
+          type: string
+          pattern: '^[0-2][0-9]:[0-5][0-9]$'
+          example: '14:00'
+          nullable: true
+        checkOut:
+          type: string
+          pattern: '^[0-2][0-9]:[0-5][0-9]$'
+          example: '11:00'
+          nullable: true
+        adults:
+          type: integer
+          example: 2
+          nullable: true
+        children:
+          type: integer
+          example: 1
+          nullable: true
+        kidsAge:
+          type: array
+          items:
+            type: integer
+          example:
+            - 5
+          nullable: true
+        registration:
+          type: string
+          enum:
+            - CHECKED_IN
+            - CHECKED_OUT
+            - NONE
+          example: NONE
+          nullable: true
+        doorCode:
+          type: string
+          example: AB12
+          nullable: true
+        prepayment:
+          type: number
+          format: float
+          example: 50
+          nullable: true
+        prepaymentDeadline:
+          type: string
+          format: date
+          example: '2025-09-25'
+          nullable: true
+        paymentStatus:
+          type: string
+          enum:
+            - NO_PAYMENT
+            - PREPAYMENT_PAID
+            - PAID_ALL
+          example: NO_PAYMENT
+          nullable: true
+        paymentType:
+          type: string
+          enum:
+            - NONE
+            - CASH_PAYMENT
+            - BANK_TRANSFER_PAYMENT
+            - CREDIT_CARD_PAYMENT
+            - VIRTUAL_CARD_PAYMENT
+            - ONLINE_PAYMENT
+          example: NONE
+          nullable: true
+        currency:
+          type: string
+          example: EUR
+          nullable: true
+        meal:
+          type: string
+          enum:
+            - OV
+            - BB
+            - HB
+            - FB
+            - AI
+            - DINNER
+            - BREAKFAST_SUPPER
+            - DINNER_SUPPER
+            - SUPPER
+          example: BB
+          nullable: true
+        adultsPortion:
+          type: integer
+          example: 2
+          nullable: true
+        childrenPortion:
+          type: integer
+          example: 0
+          nullable: true
+        additionalServices:
+          type: array
+          items:
+            properties:
+              additionalServiceId:
+                type: integer
+                example: 15
+              status:
+                type: integer
+                enum:
+                  - 0
+                  - 1
+                example: 1
+              price:
+                type: number
+                format: float
+                example: 25.5
+              quantity:
+                type: integer
+                example: 2
+                nullable: true
+            type: object
+          example:
+            -
+              additionalServiceId: 15
+              status: 1
+              price: 25.5
+              quantity: 2
+            -
+              additionalServiceId: 8
+              status: 0
+              price: 15
+              quantity: null
+          nullable: true
+        color:
+          type: string
+          example: '#56bbff'
+          nullable: true
+        price:
+          type: number
+          format: float
+          example: 250
+          nullable: true
+        pricePerRoom:
+          type: number
+          format: float
+          example: 150
+          nullable: true
+        pricePerMeal:
+          type: number
+          format: float
+          example: 100
+          nullable: true
+        discount:
+          type: number
+          format: float
+          example: 10
+          nullable: true
+        discountType:
+          type: integer
+          enum:
+            - 0
+            - 1
+          example: '0 - percentage, 1 - fixed amount'
+          nullable: true
+        rateId:
+          type: integer
+          example: 12011
+          nullable: true
+      type: object
+    Lock:
+      description: 'Lock object'
+      required:
+        - type
+        - reservationId
+      properties:
+        type:
+          type: string
+          enum:
+            - LOCK
+            - SINGLE
+            - GROUP
+          example: SINGLE
+        reservationId:
+          type: integer
+          example: 478535
+        from:
+          description: 'Required for SINGLE/GROUP types'
+          type: string
+          format: date
+          example: '2025-10-01'
+          nullable: true
+        to:
+          description: 'Required for SINGLE/GROUP types'
+          type: string
+          format: date
+          example: '2025-10-03'
+          nullable: true
+        roomId:
+          type: integer
+          example: 30268
+          nullable: true
+        employeeId:
+          type: integer
+          example: null
+          nullable: true
+        sourceId:
+          type: integer
+          example: 0
+        additionalInfo:
+          type: string
+          example: 'Will arrive with dog'
+          nullable: true
+        addDate:
+          type: string
+          format: date-time
+          example: '2025-09-28T10:12:33Z'
+        editDate:
+          type: string
+          format: date-time
+          example: '2025-09-28T11:15:45Z'
+      type: object
+    ReservationCreateRequest:
+      description: 'Create reservation, group reservation or lock based on type field'
+      required:
+        - type
+        - arrival
+        - departure
+        - roomId
+      properties:
+        type:
+          description: 'Type of reservation to create'
+          type: string
+          enum:
+            - SINGLE
+            - GROUP
+            - LOCK
+          example: SINGLE
+        arrival:
+          type: string
+          format: date
+          example: '2025-10-01'
+        departure:
+          type: string
+          format: date
+          example: '2025-10-03'
+        roomId:
+          type: integer
+          example: 30268
+        adults:
+          type: integer
+          example: 2
+        children:
+          type: integer
+          example: 1
+        kidsAge:
+          type: array
+          items:
+            type: integer
+          example:
+            - 5
+        clientId:
+          description: 'Required for SINGLE/GROUP types, null for LOCK'
+          type: integer
+          example: 362723
+          nullable: true
+        checkIn:
+          type: string
+          pattern: '^[0-2][0-9]:[0-5][0-9]$'
+          example: '14:00'
+        checkOut:
+          type: string
+          pattern: '^[0-2][0-9]:[0-5][0-9]$'
+          example: '11:00'
+        additionalInfo:
+          type: string
+          example: 'Will arrive with dog'
+          nullable: true
+        currency:
+          type: string
+          example: EUR
+        meal:
+          type: string
+          enum:
+            - OV
+            - BB
+            - HB
+            - FB
+            - AI
+            - DINNER
+            - BREAKFAST_SUPPER
+            - DINNER_SUPPER
+            - SUPPER
+          example: BB
+        doorCode:
+          type: string
+          example: AB12
+        prepayment:
+          type: number
+          format: float
+          example: 50
+        prepaymentDeadline:
+          type: string
+          format: date
+          example: '2025-09-25'
+          nullable: true
+        paymentStatus:
+          type: string
+          enum:
+            - NO_PAYMENT
+            - PREPAYMENT_PAID
+            - PAID_ALL
+          example: NO_PAYMENT
+        paymentType:
+          type: string
+          enum:
+            - NONE
+            - CASH_PAYMENT
+            - BANK_TRANSFER_PAYMENT
+            - CREDIT_CARD_PAYMENT
+            - VIRTUAL_CARD_PAYMENT
+            - ONLINE_PAYMENT
+          example: NONE
+        registration:
+          type: string
+          enum:
+            - CHECKED_IN
+            - CHECKED_OUT
+            - NONE
+          example: NONE
+          nullable: true
+        adultsPortion:
+          type: integer
+          example: 2
+        childrenPortion:
+          type: integer
+          example: 0
+        additionalServices:
+          type: array
+          items:
+            properties:
+              additionalServiceId:
+                type: integer
+                example: 15
+              status:
+                type: integer
+                enum:
+                  - 0
+                  - 1
+                example: 1
+              price:
+                type: number
+                format: float
+                example: 25.5
+              quantity:
+                type: integer
+                example: 2
+                nullable: true
+            type: object
+          example:
+            -
+              additionalServiceId: 15
+              status: 1
+              price: 25.5
+              quantity: 2
+            -
+              additionalServiceId: 8
+              status: 0
+              price: 15
+              quantity: null
+          nullable: true
+        color:
+          type: string
+          example: '#56bbff'
+          nullable: true
+        pricePerRoom:
+          type: number
+          format: float
+          example: 150
+        pricePerMeal:
+          type: number
+          format: float
+          example: 100
+        discount:
+          type: number
+          format: float
+          example: 10
+        discountType:
+          type: integer
+          enum:
+            - 0
+            - 1
+          example: '0 - percentage, 1 - fixed amount'
+        rateId:
+          type: integer
+          example: 12011
+          nullable: true
+      type: object
+    ReservationUpdateRequest:
+      description: 'Update reservation, group reservation or lock. All fields are optional - send only fields you want to change. Note: type cannot be changed after creation.'
+      properties:
+        arrival:
+          type: string
+          format: date
+          example: '2025-10-01'
+        departure:
+          type: string
+          format: date
+          example: '2025-10-04'
+        roomId:
+          type: integer
+          example: 30268
+        adults:
+          type: integer
+          example: 2
+        children:
+          type: integer
+          example: 1
+        kidsAge:
+          type: array
+          items:
+            type: integer
+          example:
+            - 5
+        clientId:
+          type: integer
+          example: 362723
+          nullable: true
+        checkIn:
+          type: string
+          pattern: '^[0-2][0-9]:[0-5][0-9]$'
+          example: '14:00'
+        checkOut:
+          type: string
+          pattern: '^[0-2][0-9]:[0-5][0-9]$'
+          example: '12:00'
+        additionalInfo:
+          type: string
+          example: 'Extend one night'
+          nullable: true
+        currency:
+          type: string
+          example: EUR
+        meal:
+          type: string
+          enum:
+            - OV
+            - BB
+            - HB
+            - FB
+            - AI
+            - DINNER
+            - BREAKFAST_SUPPER
+            - DINNER_SUPPER
+            - SUPPER
+          example: BB
+        doorCode:
+          type: string
+          example: AB12
+        prepayment:
+          type: number
+          format: float
+          example: 50
+        prepaymentDeadline:
+          type: string
+          format: date
+          example: '2025-09-25'
+          nullable: true
+        paymentStatus:
+          type: string
+          enum:
+            - NO_PAYMENT
+            - PREPAYMENT_PAID
+            - PAID_ALL
+          example: NO_PAYMENT
+        paymentType:
+          type: string
+          enum:
+            - NONE
+            - CASH_PAYMENT
+            - BANK_TRANSFER_PAYMENT
+            - CREDIT_CARD_PAYMENT
+            - VIRTUAL_CARD_PAYMENT
+            - ONLINE_PAYMENT
+          example: NONE
+        registration:
+          type: string
+          enum:
+            - CHECKED_IN
+            - CHECKED_OUT
+            - NONE
+          example: NONE
+          nullable: true
+        adultsPortion:
+          type: integer
+          example: 2
+        childrenPortion:
+          type: integer
+          example: 0
+        additionalServices:
+          type: array
+          items:
+            properties:
+              additionalServiceId:
+                type: integer
+                example: 15
+              status:
+                type: integer
+                enum:
+                  - 0
+                  - 1
+                example: 1
+              price:
+                type: number
+                format: float
+                example: 25.5
+              quantity:
+                type: integer
+                example: 2
+                nullable: true
+            type: object
+          example:
+            -
+              additionalServiceId: 15
+              status: 1
+              price: 25.5
+              quantity: 2
+            -
+              additionalServiceId: 8
+              status: 0
+              price: 15
+              quantity: null
+          nullable: true
+        color:
+          type: string
+          example: '#56bbff'
+          nullable: true
+        pricePerRoom:
+          type: number
+          format: float
+          example: 225
+        pricePerMeal:
+          type: number
+          format: float
+          example: 100
+        discount:
+          type: number
+          format: float
+          example: 10
+        discountType:
+          type: integer
+          enum:
+            - 0
+            - 1
+          example: '0 - percentage, 1 - fixed amount'
+        rateId:
+          type: integer
+          example: 12011
+          nullable: true
+      type: object
+    ReservationListResponse:
+      description: 'List of reservations and/or locks'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reservation'
+        meta:
+          $ref: '#/components/schemas/MetaWithPagination'
+      type: object
+    ReservationResponse:
+      description: 'Single reservation or lock response with metadata'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/Reservation'
+        meta:
+          $ref: '#/components/schemas/MetaWithRuid'
+      type: object
+    ReservationCreateResponse:
+      description: 'Created reservation or lock response with metadata'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/Reservation'
+        meta:
+          $ref: '#/components/schemas/MetaWithRuid'
+      type: object
+    ReservationRestoreResponse:
+      description: 'Restored reservation or lock response with metadata'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/Reservation'
+        meta:
+          $ref: '#/components/schemas/MetaWithRuid'
+      type: object
+    Room:
+      description: 'Public room representation'
+      required:
+        - roomId
+        - name
+        - persons
+        - maxAdults
+        - maxChildren
+        - roomType
+        - roomTypeId
+        - singleBed
+        - doubleBed
+        - extraBed
+        - service
+        - shareInOffer
+      properties:
+        roomId:
+          type: integer
+          example: 30268
+        name:
+          type: string
+          example: 'Deluxe Sea View'
+        persons:
+          description: 'Base number of persons'
+          type: integer
+          example: 4
+        maxAdults:
+          type: integer
+          example: 4
+        maxChildren:
+          type: integer
+          example: 2
+        roomType:
+          description: 'Enum (internal)'
+          type: string
+          example: ROOM
+        roomTypeId:
+          type: integer
+          example: 12
+          nullable: true
+        singleBed:
+          type: integer
+          example: 2
+        doubleBed:
+          type: integer
+          example: 1
+        extraBed:
+          type: integer
+          example: 0
+        service:
+          description: 'Service status enum'
+          type: string
+          enum:
+            - CLEAN
+            - DIRTY
+            - WHILE_CLEANING
+          example: CLEAN
+        serviceInfo:
+          type: string
+          example: 'Needs deep cleaning next week'
+          nullable: true
+        info:
+          type: string
+          example: 'Top floor corner unit'
+          nullable: true
+        color:
+          type: string
+          example: '#1f2a3b'
+          nullable: true
+        square:
+          type: string
+          example: '45'
+        squareType:
+          type: string
+          example: m2
+        description:
+          description: "Localized description map. Key 'default' is required. Other keys = ISO language codes."
+          type: object
+          example:
+            default: 'Spacious apartment with balcony'
+            pl: 'Przestronny apartament z balkonem'
+            en: 'Spacious apartment with balcony'
+          additionalProperties:
+            type: string
+        equipment:
+          type: array
+          items:
+            type: string
+            enum:
+              - air_conditioning
+              - kitchenette
+              - television
+              - bathroom
+              - pool
+              - balcony
+              - washing_machine
+              - kitchen_utensils
+              - baby_crib
+              - blanket
+              - screen
+              - umbrella
+              - lounger
+              - clothes_hanger
+              - dryer
+              - towels
+              - floor_covering
+              - fireplace
+              - heating
+              - iron
+              - safe
+              - desk
+              - bidet
+              - toothbrush
+              - shampoo
+              - hair_conditioner
+              - soap
+              - radio
+              - table
+              - wine_glasses
+              - corkscrew
+              - water
+              - grill
+              - dishwasher
+              - minibar
+              - refrigerator
+              - coffee_machine
+          example:
+            - air_conditioning
+            - television
+            - balcony
+        shareInOffer:
+          type: integer
+          enum:
+            - 0
+            - 1
+          example: 1
+        locationId:
+          type: integer
+          example: 55
+          nullable: true
+      type: object
+    RoomCreateRequest:
+      description: 'Create room payload'
+      required:
+        - name
+        - persons
+      properties:
+        name:
+          type: string
+          example: 'Deluxe Sea View'
+        persons:
+          type: integer
+          example: 4
+        maxAdults:
+          type: integer
+          example: 4
+          nullable: true
+        maxChildren:
+          type: integer
+          example: 2
+          nullable: true
+        roomTypeId:
+          type: integer
+          example: 12
+          nullable: true
+        roomType:
+          type: string
+          example: ROOM
+          nullable: true
+        singleBed:
+          type: integer
+          example: 2
+        doubleBed:
+          type: integer
+          example: 1
+        extraBed:
+          type: integer
+          example: 0
+        service:
+          type: string
+          example: CLEAN
+        serviceInfo:
+          type: string
+          example: 'Rotational cleaning schedule'
+          nullable: true
+        info:
+          type: string
+          example: 'Corner unit'
+          nullable: true
+        color:
+          type: string
+          example: '#1f2a3b'
+          nullable: true
+        square:
+          type: string
+          example: '45'
+        squareType:
+          type: string
+          example: m2
+        description:
+          example:
+            description: 'Base description'
+            pl: 'Opis bazowy'
+          oneOf:
+            -
+              type: string
+            -
+              type: object
+              additionalProperties:
+                type: string
+        equipment:
+          type: array
+          items:
+            type: string
+          example:
+            - air_conditioning
+            - television
+        shareInOffer:
+          type: integer
+          enum:
+            - 0
+            - 1
+          example: 1
+        locationId:
+          type: integer
+          example: 55
+          nullable: true
+      type: object
+    RoomUpdateRequest:
+      description: 'Update room payload (patch style - send only fields you change)'
+      properties:
+        service:
+          type: string
+          example: CLEAN
+        serviceInfo:
+          type: string
+          example: 'Replace the batteries in the remote control'
+          nullable: true
+        description:
+          example:
+            description: 'Updated base'
+            en: 'Updated base'
+          oneOf:
+            -
+              type: string
+            -
+              type: object
+              additionalProperties:
+                type: string
+        equipment:
+          type: array
+          items:
+            type: string
+          example:
+            - air_conditioning
+            - balcony
+            - television
+        shareInOffer:
+          type: integer
+          enum:
+            - 0
+            - 1
+          example: 1
+        locationId:
+          type: integer
+          example: 60
+          nullable: true
+      type: object
+    RoomListResponse:
+      description: 'Paginated list of rooms'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Room'
+        meta:
+          $ref: '#/components/schemas/MetaWithPagination'
+      type: object
+    RoomResponse:
+      description: 'Single room response'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/Room'
+        meta:
+          $ref: '#/components/schemas/MetaWithRuid'
+      type: object
+    RoomCreateResponse:
+      description: 'Created room response'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/Room'
+        meta:
+          $ref: '#/components/schemas/MetaWithRuid'
+      type: object
+    RoomType:
+      description: 'Room type configuration with specifications and amenities'
+      required:
+        - roomTypeId
+        - type
+        - description
+        - singleBed
+        - doubleBed
+        - extraBed
+        - square
+        - maxAdults
+        - maxChildren
+        - maxPeople
+        - equipment
+      properties:
+        roomTypeId:
+          description: 'Unique room type identifier'
+          type: integer
+          example: 33
+        type:
+          description: 'Room type category'
+          type: string
+          enum:
+            - TWIN_ROOM
+            - QUAD_ROOM
+            - HOLIDAY_HOME
+            - SINGLE_ROOM
+            - DOUBLE_ROOM
+            - SUITE
+            - APARTMENT
+          example: HOLIDAY_HOME
+        description:
+          description: "Localized description map. Key 'default' is required. Other keys = ISO language codes."
+          type: object
+          example:
+            default: '<p>Opis default</p>'
+            pl: '<p>Polski opis</p>'
+            en: '<p>English description</p>'
+          additionalProperties:
+            type: string
+        singleBed:
+          description: 'Number of single beds'
+          type: integer
+          example: 0
+        doubleBed:
+          description: 'Number of double beds'
+          type: integer
+          example: 7
+        extraBed:
+          description: 'Number of extra beds available'
+          type: integer
+          example: 0
+        square:
+          description: 'Room area in square meters'
+          type: integer
+          example: 320
+        maxAdults:
+          description: 'Maximum number of adults'
+          type: integer
+          example: 14
+        maxChildren:
+          description: 'Maximum number of children'
+          type: integer
+          example: 13
+        maxPeople:
+          description: 'Maximum total number of people'
+          type: integer
+          example: 14
+        equipment:
+          description: 'List of equipment/amenities available in this room type'
+          type: array
+          items:
+            type: string
+            enum:
+              - air_conditioning
+              - kitchenette
+              - television
+              - bathroom
+              - pool
+              - balcony
+              - washing_machine
+              - kitchen_utensils
+              - baby_crib
+              - blanket
+              - screen
+              - umbrella
+              - lounger
+              - clothes_hanger
+              - dryer
+              - towels
+              - floor_covering
+              - fireplace
+              - heating
+              - iron
+              - safe
+              - desk
+              - bidet
+              - toothbrush
+              - shampoo
+              - hair_conditioner
+              - soap
+              - radio
+              - table
+              - wine_glasses
+              - corkscrew
+              - water
+              - grill
+              - dishwasher
+              - minibar
+              - refrigerator
+              - coffee_machine
+          example:
+            - bathroom
+            - pool
+            - balcony
+            - washing_machine
+            - kitchen_utensils
+            - kitchenette
+      type: object
+    RoomTypesResponse:
+      description: 'Response containing all room types'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: 'List of all available room types'
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomType'
+        meta:
+          $ref: '#/components/schemas/MetaWithRuid'
+      type: object
+    Source:
+      description: 'Booking source information'
+      required:
+        - sourceId
+        - name
+        - isCustom
+      properties:
+        sourceId:
+          description: 'Unique identifier for the source'
+          type: integer
+          example: 3
+        name:
+          description: 'Name of the booking source'
+          type: string
+          example: booking.com
+        isCustom:
+          description: 'Whether this is a custom source created by the user'
+          type: boolean
+          example: false
+      type: object
+    SourcesResponse:
+      description: 'Response containing all booking sources'
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: 'List of all available booking sources'
+          type: array
+          items:
+            $ref: '#/components/schemas/Source'
+        meta:
+          $ref: '#/components/schemas/MetaWithRuid'
+      type: object
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: 'Page number (>=1)'
+      required: false
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+    LimitParam:
+      name: limit
+      in: query
+      description: 'Page size (1–200)'
+      required: false
+      schema:
+        type: integer
+        default: 25
+        maximum: 200
+        minimum: 1
+  securitySchemes:
+    bearerAuth:
+      type: http
+      description: 'Pass the token in header: Authorization: Bearer <JWT>'
+      bearerFormat: JWT
+      scheme: bearer
+tags:
+  -
+    name: auth
+    description: 'Authentication (JWT).'
+  -
+    name: health
+    description: 'API status.'
+  -
+    name: reservations
+    description: 'Create, read, update, and delete operations for reservations/locks.'
+  -
+    name: availability
+    description: 'Get room availability for date range.'
+  -
+    name: pricing
+    description: 'Get pricing information for rooms or room types.'
+  -
+    name: clients
+    description: 'Create, read, update, and delete operations for clients.'
+  -
+    name: rooms
+    description: 'Create, read, update, and delete operations for rooms.'
+  -
+    name: rates
+    description: 'Get all rates.'
+  -
+    name: sources
+    description: 'Get all booking sources.'
+  -
+    name: invoices
+    description: 'Create, read, update, and delete operations for invoices.'
+  -
+    name: room-types
+    description: room-types
