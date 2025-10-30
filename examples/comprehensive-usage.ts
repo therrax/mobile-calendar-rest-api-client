@@ -310,10 +310,241 @@ async function comprehensiveUsageExample() {
       console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
     }
 
+    // ===== RESERVATION VALIDATION EDGE CASES =====
+    console.log('\n📋 TESTING RESERVATION UPDATE VALIDATION EDGE CASES');
+    console.log('-'.repeat(50));
+
+    if (createdEntities.reservation) {
+      const reservationId = createdEntities.reservation.reservationId;
+
+      // Test 1: Invalid date format
+      tally.total++;
+      try {
+        console.log('✅ Test 1: Invalid arrival date format in update...');
+        await client.updateReservation(reservationId, {
+          arrival: '2025-13-45' // Invalid date
+        });
+        console.log('   ❌ Should have failed with invalid date'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected invalid date: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+
+      // Test 2: Departure before arrival
+      tally.total++;
+      try {
+        console.log('\n✅ Test 2: Departure before arrival in update...');
+        await client.updateReservation(reservationId, {
+          arrival: '2025-01-20',
+          departure: '2025-01-15' // Before arrival
+        });
+        console.log('   ❌ Should have failed with departure before arrival'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected departure before arrival: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+
+      // Test 3: Zero adults
+      tally.total++;
+      try {
+        console.log('\n✅ Test 3: Zero adults in update...');
+        await client.updateReservation(reservationId, {
+          adults: 0 // Zero adults
+        });
+        console.log('   ❌ Should have failed with zero adults'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected zero adults: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+
+      // Test 4: Negative price
+      tally.total++;
+      try {
+        console.log('\n✅ Test 4: Negative price in update...');
+        await client.updateReservation(reservationId, {
+          price: -100, // Negative price
+          pricePerRoom: -100
+        });
+        console.log('   ❌ Should have failed with negative price'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected negative price: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+
+      // Test 5: Invalid room ID
+      tally.total++;
+      try {
+        console.log('\n✅ Test 5: Invalid room ID in update...');
+        await client.updateReservation(reservationId, {
+          roomId: 99999 // Non-existent room
+        });
+        console.log('   ❌ Should have failed with invalid room ID'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected invalid room ID: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+
+      // Test 6: Children without ages
+      tally.total++;
+      try {
+        console.log('\n✅ Test 6: Children count mismatch with ages in update...');
+        await client.updateReservation(reservationId, {
+          children: 3, // 3 children
+          kidsAge: [8, 12] // Only 2 ages
+        });
+        console.log('   ❌ Should have failed with children/age mismatch'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected children/age mismatch: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+
+      // Test 7: Invalid check-in time format
+      tally.total++;
+      try {
+        console.log('\n✅ Test 7: Invalid check-in time format in update...');
+        await client.updateReservation(reservationId, {
+          checkIn: '25:99' // Invalid time
+        });
+        console.log('   ❌ Should have failed with invalid check-in time'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected invalid check-in time: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+
+      // Test 8: Invalid currency code
+      tally.total++;
+      try {
+        console.log('\n✅ Test 8: Invalid currency code in update...');
+        await client.updateReservation(reservationId, {
+          currency: 'INVALID' // Invalid currency
+        });
+        console.log('   ❌ Should have failed with invalid currency'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected invalid currency: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+
+      // Test 9: Invalid reservation type
+      tally.total++;
+      try {
+        console.log('\n✅ Test 9: Invalid reservation type in update...');
+        await client.updateReservation(reservationId, {
+          type: 'INVALID' as any // Invalid type
+        });
+        console.log('   ❌ Should have failed with invalid reservation type'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected invalid reservation type: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+
+      // Test 10: Extremely long stay (over 1 year)
+      tally.total++;
+      try {
+        console.log('\n✅ Test 10: Extremely long stay duration in update...');
+        await client.updateReservation(reservationId, {
+          arrival: '2025-01-01',
+          departure: '2027-01-01' // 2 years stay
+        });
+        console.log('   ❌ Should have failed with extremely long stay'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected extremely long stay: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+
+      // Test 11: Invalid source ID
+      tally.total++;
+      try {
+        console.log('\n✅ Test 11: Invalid source ID in update...');
+        await client.updateReservation(reservationId, {
+          sourceId: 99999 // Invalid source ID
+        });
+        console.log('   ❌ Should have failed with invalid source ID'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected invalid source ID: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+
+      // Test 12: Same day arrival and departure
+      tally.total++;
+      try {
+        console.log('\n✅ Test 12: Same day arrival and departure in update...');
+        await client.updateReservation(reservationId, {
+          arrival: '2025-04-05',
+          departure: '2025-04-05' // Same day
+        });
+        console.log('   ❌ Should have failed with same day arrival/departure'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected same day arrival/departure: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+
+      // Test 13: Non-existent rate ID
+      tally.total++;
+      try {
+        console.log('\n✅ Test 13: Non-existent rate ID in update...');
+        await client.updateReservation(reservationId, {
+          rateId: 88888 // Non-existent rate ID
+        });
+        console.log('   ❌ Should have failed with non-existent rate ID'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected non-existent rate ID: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+
+      // Test 14: Invalid discount percentage (over 100%)
+      tally.total++;
+      try {
+        console.log('\n✅ Test 14: Invalid discount percentage (over 100%) in update...');
+        await client.updateReservation(reservationId, {
+          discount: 120, // 120% discount - invalid
+          discountType: 0 // Percentage type
+        });
+        console.log('   ❌ Should have failed with 120% discount'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected 120% discount: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+
+      // Test 15: Extreme discount percentage (1000%)
+      tally.total++;
+      try {
+        console.log('\n✅ Test 15: Extreme discount percentage (1000%) in update...');
+        await client.updateReservation(reservationId, {
+          discount: 1000, // 1000% discount - extreme case
+          discountType: 0 // Percentage type
+        });
+        console.log('   ❌ Should have failed with 1000% discount'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected 1000% discount: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+
+      // Test 16: Fixed discount greater than reservation price
+      tally.total++;
+      try {
+        console.log('\n✅ Test 16: Fixed discount greater than reservation price in update...');
+        await client.updateReservation(reservationId, {
+          price: 200,
+          pricePerRoom: 200,
+          discount: 350, // 350 PLN discount on 200 PLN reservation
+          discountType: 1 // Fixed amount type
+        });
+        console.log('   ❌ Should have failed with discount greater than price'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected discount greater than price: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      }
+    } else {
+      console.log('   ⚠️ Skipping reservation validation tests - no reservation available');
+      for (let i = 0; i < 16; i++) {
+        tally.total++; mark(false);
+      }
+    }
+
     // ===== INVOICE CRUD TESTS =====
     console.log('\n📋 TESTING INVOICE CRUD OPERATIONS');
     console.log('-'.repeat(40));
-
+  
     // CREATE INVOICE
     tally.total++; console.log('✅ Creating invoice...');
     const createdInvoice = await client.createInvoice({

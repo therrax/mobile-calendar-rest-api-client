@@ -262,13 +262,11 @@ clientModel.hasCompleteContactInfo();
 
 ```bash
 # Run tests
-npm test
+npx tsc examples/comprehensive-usage.ts --outDir dist --moduleResolution node --target es2020 --module commonjs
 
-# Watch mode
-npm run test:watch
+npx tsc examples/comprehensive-usage.ts --noEmit
 
-# Coverage
-npm run test:coverage
+npx tsc examples/comprehensive-usage.ts; node examples/comprehensive-usage.js
 ```
 
 ## 📦 Build

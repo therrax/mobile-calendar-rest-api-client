@@ -18,7 +18,8 @@
     "prepublishOnly": "npm run clean && npm run build",
     "dev": "npm run build:watch",
     "example": "npm run build && node -r dotenv/config dist/examples/comprehensive-usage.js dotenv_config_path=.env",
-    "example:comprehensive": "npm run build && node -r dotenv/config dist/examples/comprehensive-usage.js dotenv_config_path=.env"
+    "example:comprehensive": "npm run build && node -r dotenv/config dist/examples/comprehensive-usage.js dotenv_config_path=.env",
+    "example:invoice-generator": "npm run build && node -r dotenv/config dist/examples/invoice-generator.js dotenv_config_path=.env"
   },
   "keywords": [
     "mobile-calendar",
