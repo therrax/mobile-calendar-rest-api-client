@@ -43,7 +43,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var index_1 = require("../src/index");
 function comprehensiveUsageExample() {
     return __awaiter(this, void 0, void 0, function () {
-        var logger, tally, mark, client, createdEntities, rooms, reservations, clients, availability, pricing, rates, sources, roomTypes, invoices, newClient, readClient, updatedClient, reservation, readReservation, updatedReservation, error_1, error_2, error_3, error_4, error_5, error_6, error_7, error_8, error_9, error_10, error_11, error_12, error_13, error_14, error_15, error_16, error_17, error_18, error_19, i, createdInvoice, readInvoice, updatedInvoice, error_20, error_21, error_22, error_23, bar, successPct;
+        var logger, tally, mark, client, createdEntities, rooms, reservations, clients, availability, pricing, rates, sources, roomTypes, invoices, newClient, readClient, updatedClient, reservation, readReservation, updatedReservation, error_1, error_2, error_3, reservationId, error_4, error_5, error_6, error_7, error_8, error_9, error_10, error_11, error_12, error_13, error_14, error_15, error_16, error_17, error_18, error_19, i, createdInvoice, readInvoice, updatedInvoice, error_20, error_21, error_22, error_23, bar, successPct;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -403,56 +403,18 @@ function comprehensiveUsageExample() {
                     return [3 /*break*/, 32];
                 case 32:
                     // ===== RESERVATION VALIDATION EDGE CASES =====
-                    console.log('\n📋 TESTING RESERVATION VALIDATION EDGE CASES');
+                    console.log('\n📋 TESTING RESERVATION UPDATE VALIDATION EDGE CASES');
                     console.log('-'.repeat(50));
-                    if (!(rooms.data.length > 0 && newClient.data)) return [3 /*break*/, 97];
+                    if (!createdEntities.reservation) return [3 /*break*/, 97];
+                    reservationId = createdEntities.reservation.reservationId;
                     // Test 1: Invalid date format
                     tally.total++;
                     _a.label = 33;
                 case 33:
                     _a.trys.push([33, 35, , 36]);
-                    console.log('✅ Test 1: Invalid arrival date format...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'SINGLE',
-                            arrival: '2025-13-45', // Invalid date
-                            departure: '2025-01-17',
-                            roomId: rooms.data[0].roomId,
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '14:00',
-                            checkOut: '11:00',
-                            adults: 2,
-                            children: 0,
-                            kidsAge: [],
-                            registration: 'NONE',
-                            sourceId: 1,
-                            doorCode: '',
-                            additionalInfo: 'Invalid date test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'PLN',
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 0,
-                            additionalServices: [],
-                            color: '#fb8c00',
-                            price: 200,
-                            pricePerRoom: 200,
-                            pricePerMeal: 0,
-                            discount: 0,
-                            discountType: 0,
-                            rateId: null
+                    console.log('✅ Test 1: Invalid arrival date format in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
+                            arrival: '2025-13-45' // Invalid date
                         })];
                 case 34:
                     _a.sent();
@@ -471,48 +433,10 @@ function comprehensiveUsageExample() {
                     _a.label = 37;
                 case 37:
                     _a.trys.push([37, 39, , 40]);
-                    console.log('\n✅ Test 2: Departure before arrival...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'SINGLE',
+                    console.log('\n✅ Test 2: Departure before arrival in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
                             arrival: '2025-01-20',
-                            departure: '2025-01-15', // Before arrival
-                            roomId: rooms.data[0].roomId,
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '14:00',
-                            checkOut: '11:00',
-                            adults: 2,
-                            children: 0,
-                            kidsAge: [],
-                            registration: 'NONE',
-                            sourceId: 1,
-                            doorCode: '',
-                            additionalInfo: 'Logic error test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'PLN',
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 0,
-                            additionalServices: [],
-                            color: '#fb8c00',
-                            price: 200,
-                            pricePerRoom: 200,
-                            pricePerMeal: 0,
-                            discount: 0,
-                            discountType: 0,
-                            rateId: null
+                            departure: '2025-01-15' // Before arrival
                         })];
                 case 38:
                     _a.sent();
@@ -531,48 +455,9 @@ function comprehensiveUsageExample() {
                     _a.label = 41;
                 case 41:
                     _a.trys.push([41, 43, , 44]);
-                    console.log('\n✅ Test 3: Zero adults...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'SINGLE',
-                            arrival: '2025-02-15',
-                            departure: '2025-02-17',
-                            roomId: rooms.data[0].roomId,
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '14:00',
-                            checkOut: '11:00',
-                            adults: 0, // Zero adults
-                            children: 2,
-                            kidsAge: [8, 12],
-                            registration: 'NONE',
-                            sourceId: 1,
-                            doorCode: '',
-                            additionalInfo: 'Zero adults test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'PLN',
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 2,
-                            additionalServices: [],
-                            color: '#fb8c00',
-                            price: 150,
-                            pricePerRoom: 150,
-                            pricePerMeal: 0,
-                            discount: 0,
-                            discountType: 0,
-                            rateId: null
+                    console.log('\n✅ Test 3: Zero adults in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
+                            adults: 0 // Zero adults
                         })];
                 case 42:
                     _a.sent();
@@ -591,48 +476,10 @@ function comprehensiveUsageExample() {
                     _a.label = 45;
                 case 45:
                     _a.trys.push([45, 47, , 48]);
-                    console.log('\n✅ Test 4: Negative price...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'SINGLE',
-                            arrival: '2025-02-20',
-                            departure: '2025-02-22',
-                            roomId: rooms.data[0].roomId,
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '14:00',
-                            checkOut: '11:00',
-                            adults: 2,
-                            children: 0,
-                            kidsAge: [],
-                            registration: 'NONE',
-                            sourceId: 1,
-                            doorCode: '',
-                            additionalInfo: 'Negative price test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'PLN',
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 0,
-                            additionalServices: [],
-                            color: '#fb8c00',
+                    console.log('\n✅ Test 4: Negative price in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
                             price: -100, // Negative price
-                            pricePerRoom: -100,
-                            pricePerMeal: 0,
-                            discount: 0,
-                            discountType: 0,
-                            rateId: null
+                            pricePerRoom: -100
                         })];
                 case 46:
                     _a.sent();
@@ -651,48 +498,9 @@ function comprehensiveUsageExample() {
                     _a.label = 49;
                 case 49:
                     _a.trys.push([49, 51, , 52]);
-                    console.log('\n✅ Test 5: Invalid room ID...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'SINGLE',
-                            arrival: '2025-02-25',
-                            departure: '2025-02-27',
-                            roomId: 99999, // Non-existent room
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '14:00',
-                            checkOut: '11:00',
-                            adults: 2,
-                            children: 0,
-                            kidsAge: [],
-                            registration: 'NONE',
-                            sourceId: 1,
-                            doorCode: '',
-                            additionalInfo: 'Invalid room test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'PLN',
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 0,
-                            additionalServices: [],
-                            color: '#fb8c00',
-                            price: 200,
-                            pricePerRoom: 200,
-                            pricePerMeal: 0,
-                            discount: 0,
-                            discountType: 0,
-                            rateId: null
+                    console.log('\n✅ Test 5: Invalid room ID in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
+                            roomId: 99999 // Non-existent room
                         })];
                 case 50:
                     _a.sent();
@@ -711,48 +519,10 @@ function comprehensiveUsageExample() {
                     _a.label = 53;
                 case 53:
                     _a.trys.push([53, 55, , 56]);
-                    console.log('\n✅ Test 6: Children count mismatch with ages...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'SINGLE',
-                            arrival: '2025-03-01',
-                            departure: '2025-03-03',
-                            roomId: rooms.data[0].roomId,
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '14:00',
-                            checkOut: '11:00',
-                            adults: 2,
+                    console.log('\n✅ Test 6: Children count mismatch with ages in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
                             children: 3, // 3 children
-                            kidsAge: [8, 12], // Only 2 ages
-                            registration: 'NONE',
-                            sourceId: 1,
-                            doorCode: '',
-                            additionalInfo: 'Children age mismatch test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'PLN',
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 3,
-                            additionalServices: [],
-                            color: '#fb8c00',
-                            price: 180,
-                            pricePerRoom: 180,
-                            pricePerMeal: 0,
-                            discount: 0,
-                            discountType: 0,
-                            rateId: null
+                            kidsAge: [8, 12] // Only 2 ages
                         })];
                 case 54:
                     _a.sent();
@@ -771,48 +541,9 @@ function comprehensiveUsageExample() {
                     _a.label = 57;
                 case 57:
                     _a.trys.push([57, 59, , 60]);
-                    console.log('\n✅ Test 7: Invalid check-in time format...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'SINGLE',
-                            arrival: '2025-03-05',
-                            departure: '2025-03-07',
-                            roomId: rooms.data[0].roomId,
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '25:99', // Invalid time
-                            checkOut: '11:00',
-                            adults: 2,
-                            children: 0,
-                            kidsAge: [],
-                            registration: 'NONE',
-                            sourceId: 1,
-                            doorCode: '',
-                            additionalInfo: 'Invalid check-in time test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'PLN',
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 0,
-                            additionalServices: [],
-                            color: '#fb8c00',
-                            price: 200,
-                            pricePerRoom: 200,
-                            pricePerMeal: 0,
-                            discount: 0,
-                            discountType: 0,
-                            rateId: null
+                    console.log('\n✅ Test 7: Invalid check-in time format in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
+                            checkIn: '25:99' // Invalid time
                         })];
                 case 58:
                     _a.sent();
@@ -831,48 +562,9 @@ function comprehensiveUsageExample() {
                     _a.label = 61;
                 case 61:
                     _a.trys.push([61, 63, , 64]);
-                    console.log('\n✅ Test 8: Invalid currency code...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'SINGLE',
-                            arrival: '2025-03-10',
-                            departure: '2025-03-12',
-                            roomId: rooms.data[0].roomId,
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '14:00',
-                            checkOut: '11:00',
-                            adults: 2,
-                            children: 0,
-                            kidsAge: [],
-                            registration: 'NONE',
-                            sourceId: 1,
-                            doorCode: '',
-                            additionalInfo: 'Invalid currency test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'INVALID', // Invalid currency
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 0,
-                            additionalServices: [],
-                            color: '#fb8c00',
-                            price: 200,
-                            pricePerRoom: 200,
-                            pricePerMeal: 0,
-                            discount: 0,
-                            discountType: 0,
-                            rateId: null
+                    console.log('\n✅ Test 8: Invalid currency code in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
+                            currency: 'INVALID' // Invalid currency
                         })];
                 case 62:
                     _a.sent();
@@ -891,48 +583,9 @@ function comprehensiveUsageExample() {
                     _a.label = 65;
                 case 65:
                     _a.trys.push([65, 67, , 68]);
-                    console.log('\n✅ Test 9: Invalid reservation type...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'INVALID', // Invalid type
-                            arrival: '2025-03-15',
-                            departure: '2025-03-17',
-                            roomId: rooms.data[0].roomId,
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '14:00',
-                            checkOut: '11:00',
-                            adults: 2,
-                            children: 0,
-                            kidsAge: [],
-                            registration: 'NONE',
-                            sourceId: 1,
-                            doorCode: '',
-                            additionalInfo: 'Invalid type test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'PLN',
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 0,
-                            additionalServices: [],
-                            color: '#fb8c00',
-                            price: 200,
-                            pricePerRoom: 200,
-                            pricePerMeal: 0,
-                            discount: 0,
-                            discountType: 0,
-                            rateId: null
+                    console.log('\n✅ Test 9: Invalid reservation type in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
+                            type: 'INVALID' // Invalid type
                         })];
                 case 66:
                     _a.sent();
@@ -951,48 +604,10 @@ function comprehensiveUsageExample() {
                     _a.label = 69;
                 case 69:
                     _a.trys.push([69, 71, , 72]);
-                    console.log('\n✅ Test 10: Extremely long stay duration...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'SINGLE',
+                    console.log('\n✅ Test 10: Extremely long stay duration in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
                             arrival: '2025-01-01',
-                            departure: '2027-01-01', // 2 years stay
-                            roomId: rooms.data[0].roomId,
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '14:00',
-                            checkOut: '11:00',
-                            adults: 2,
-                            children: 0,
-                            kidsAge: [],
-                            registration: 'NONE',
-                            sourceId: 1,
-                            doorCode: '',
-                            additionalInfo: 'Extreme duration test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'PLN',
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 0,
-                            additionalServices: [],
-                            color: '#fb8c00',
-                            price: 365000, // Extreme price for long stay
-                            pricePerRoom: 365000,
-                            pricePerMeal: 0,
-                            discount: 0,
-                            discountType: 0,
-                            rateId: null
+                            departure: '2027-01-01' // 2 years stay
                         })];
                 case 70:
                     _a.sent();
@@ -1011,48 +626,9 @@ function comprehensiveUsageExample() {
                     _a.label = 73;
                 case 73:
                     _a.trys.push([73, 75, , 76]);
-                    console.log('\n✅ Test 11: Invalid source ID...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'SINGLE',
-                            arrival: '2025-04-01',
-                            departure: '2025-04-03',
-                            roomId: rooms.data[0].roomId,
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '14:00',
-                            checkOut: '11:00',
-                            adults: 2,
-                            children: 0,
-                            kidsAge: [],
-                            registration: 'NONE',
-                            sourceId: 99999, // Invalid source ID
-                            doorCode: '',
-                            additionalInfo: 'Invalid source test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'PLN',
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 0,
-                            additionalServices: [],
-                            color: '#fb8c00',
-                            price: 200,
-                            pricePerRoom: 200,
-                            pricePerMeal: 0,
-                            discount: 0,
-                            discountType: 0,
-                            rateId: null
+                    console.log('\n✅ Test 11: Invalid source ID in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
+                            sourceId: 99999 // Invalid source ID
                         })];
                 case 74:
                     _a.sent();
@@ -1071,48 +647,10 @@ function comprehensiveUsageExample() {
                     _a.label = 77;
                 case 77:
                     _a.trys.push([77, 79, , 80]);
-                    console.log('\n✅ Test 12: Same day arrival and departure...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'SINGLE',
+                    console.log('\n✅ Test 12: Same day arrival and departure in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
                             arrival: '2025-04-05',
-                            departure: '2025-04-05', // Same day
-                            roomId: rooms.data[0].roomId,
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '14:00',
-                            checkOut: '11:00',
-                            adults: 2,
-                            children: 0,
-                            kidsAge: [],
-                            registration: 'NONE',
-                            sourceId: 1,
-                            doorCode: '',
-                            additionalInfo: 'Same day test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'PLN',
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 0,
-                            additionalServices: [],
-                            color: '#fb8c00',
-                            price: 200,
-                            pricePerRoom: 200,
-                            pricePerMeal: 0,
-                            discount: 0,
-                            discountType: 0,
-                            rateId: null
+                            departure: '2025-04-05' // Same day
                         })];
                 case 78:
                     _a.sent();
@@ -1131,47 +669,8 @@ function comprehensiveUsageExample() {
                     _a.label = 81;
                 case 81:
                     _a.trys.push([81, 83, , 84]);
-                    console.log('\n✅ Test 13: Non-existent rate ID...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'SINGLE',
-                            arrival: '2025-04-10',
-                            departure: '2025-04-12',
-                            roomId: rooms.data[0].roomId,
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '14:00',
-                            checkOut: '11:00',
-                            adults: 2,
-                            children: 0,
-                            kidsAge: [],
-                            registration: 'NONE',
-                            sourceId: 1,
-                            doorCode: '',
-                            additionalInfo: 'Invalid rate test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'PLN',
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 0,
-                            additionalServices: [],
-                            color: '#fb8c00',
-                            price: 200,
-                            pricePerRoom: 200,
-                            pricePerMeal: 0,
-                            discount: 0,
-                            discountType: 0,
+                    console.log('\n✅ Test 13: Non-existent rate ID in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
                             rateId: 88888 // Non-existent rate ID
                         })];
                 case 82:
@@ -1191,48 +690,10 @@ function comprehensiveUsageExample() {
                     _a.label = 85;
                 case 85:
                     _a.trys.push([85, 87, , 88]);
-                    console.log('\n✅ Test 14: Invalid discount percentage (over 100%)...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'SINGLE',
-                            arrival: '2025-04-15',
-                            departure: '2025-04-17',
-                            roomId: rooms.data[0].roomId,
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '14:00',
-                            checkOut: '11:00',
-                            adults: 2,
-                            children: 0,
-                            kidsAge: [],
-                            registration: 'NONE',
-                            sourceId: 1,
-                            doorCode: '',
-                            additionalInfo: 'Invalid discount test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'PLN',
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 0,
-                            additionalServices: [],
-                            color: '#fb8c00',
-                            price: 200,
-                            pricePerRoom: 200,
-                            pricePerMeal: 0,
+                    console.log('\n✅ Test 14: Invalid discount percentage (over 100%) in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
                             discount: 120, // 120% discount - invalid
-                            discountType: 0, // Percentage type
-                            rateId: null
+                            discountType: 0 // Percentage type
                         })];
                 case 86:
                     _a.sent();
@@ -1251,48 +712,10 @@ function comprehensiveUsageExample() {
                     _a.label = 89;
                 case 89:
                     _a.trys.push([89, 91, , 92]);
-                    console.log('\n✅ Test 15: Extreme discount percentage (1000%)...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'SINGLE',
-                            arrival: '2025-04-20',
-                            departure: '2025-04-22',
-                            roomId: rooms.data[0].roomId,
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '14:00',
-                            checkOut: '11:00',
-                            adults: 2,
-                            children: 0,
-                            kidsAge: [],
-                            registration: 'NONE',
-                            sourceId: 1,
-                            doorCode: '',
-                            additionalInfo: 'Extreme discount test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'PLN',
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 0,
-                            additionalServices: [],
-                            color: '#fb8c00',
-                            price: 200,
-                            pricePerRoom: 200,
-                            pricePerMeal: 0,
+                    console.log('\n✅ Test 15: Extreme discount percentage (1000%) in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
                             discount: 1000, // 1000% discount - extreme case
-                            discountType: 0, // Percentage type
-                            rateId: null
+                            discountType: 0 // Percentage type
                         })];
                 case 90:
                     _a.sent();
@@ -1311,48 +734,12 @@ function comprehensiveUsageExample() {
                     _a.label = 93;
                 case 93:
                     _a.trys.push([93, 95, , 96]);
-                    console.log('\n✅ Test 16: Fixed discount greater than reservation price...');
-                    return [4 /*yield*/, client.createReservation({
-                            type: 'SINGLE',
-                            arrival: '2025-04-25',
-                            departure: '2025-04-27',
-                            roomId: rooms.data[0].roomId,
-                            clientId: newClient.data.clientId,
-                            client: {
-                                clientId: newClient.data.clientId,
-                                forename: newClient.data.forename,
-                                name: newClient.data.name,
-                                phone: newClient.data.phone,
-                                email: newClient.data.email,
-                                clientType: newClient.data.clientType,
-                                countryId: newClient.data.countryId,
-                                lang: newClient.data.lang
-                            },
-                            checkIn: '14:00',
-                            checkOut: '11:00',
-                            adults: 2,
-                            children: 0,
-                            kidsAge: [],
-                            registration: 'NONE',
-                            sourceId: 1,
-                            doorCode: '',
-                            additionalInfo: 'Fixed discount greater than price test',
-                            prepayment: 0,
-                            prepaymentDeadline: null,
-                            paymentStatus: 'NO_PAYMENT',
-                            paymentType: 'NONE',
-                            currency: 'PLN',
-                            meal: 'OV',
-                            adultsPortion: 0,
-                            childrenPortion: 0,
-                            additionalServices: [],
-                            color: '#fb8c00',
+                    console.log('\n✅ Test 16: Fixed discount greater than reservation price in update...');
+                    return [4 /*yield*/, client.updateReservation(reservationId, {
                             price: 200,
                             pricePerRoom: 200,
-                            pricePerMeal: 0,
                             discount: 350, // 350 PLN discount on 200 PLN reservation
-                            discountType: 1, // Fixed amount type
-                            rateId: null
+                            discountType: 1 // Fixed amount type
                         })];
                 case 94:
                     _a.sent();
@@ -1367,7 +754,7 @@ function comprehensiveUsageExample() {
                     return [3 /*break*/, 96];
                 case 96: return [3 /*break*/, 98];
                 case 97:
-                    console.log('   ⚠️ Skipping reservation validation tests - no rooms or client available');
+                    console.log('   ⚠️ Skipping reservation validation tests - no reservation available');
                     for (i = 0; i < 16; i++) {
                         tally.total++;
                         mark(false);
