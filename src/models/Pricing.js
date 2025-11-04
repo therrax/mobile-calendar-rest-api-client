@@ -41,7 +41,7 @@ var Pricing = /** @class */ (function () {
             return 0;
         var minPrice = Infinity;
         this.prices.forEach(function (price) {
-            if (price.derivedPrices.length > 0) {
+            if (price.derivedPrices && Array.isArray(price.derivedPrices) && price.derivedPrices.length > 0) {
                 var minDerived = Math.min.apply(Math, price.derivedPrices.map(function (dp) { return dp.price; }));
                 minPrice = Math.min(minPrice, minDerived);
             }
@@ -59,7 +59,7 @@ var Pricing = /** @class */ (function () {
             return 0;
         var maxPrice = 0;
         this.prices.forEach(function (price) {
-            if (price.derivedPrices.length > 0) {
+            if (price.derivedPrices && Array.isArray(price.derivedPrices) && price.derivedPrices.length > 0) {
                 var maxDerived = Math.max.apply(Math, price.derivedPrices.map(function (dp) { return dp.price; }));
                 maxPrice = Math.max(maxPrice, maxDerived);
             }

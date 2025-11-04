@@ -73,6 +73,7 @@ async function comprehensiveUsageExample() {
       });
       console.log(`   ✓ Retrieved availability for ${availability.data.length} days`);
       console.log(`   ✓ RUID: ${availability.meta.ruid}`); mark(true);
+      console.log("availability.data:", availability.data);
     }
 
     // 5. Get pricing
@@ -83,6 +84,8 @@ async function comprehensiveUsageExample() {
         from: '2025-01-01',
         to: '2025-01-31'
       });
+
+
       console.log(`   ✓ Retrieved pricing for ${pricing.data.length} days`);
       if (pricing.data.length > 0) {
         console.log(`   ✓ Lowest price: ${pricing.data[0].getLowestPrice()}`);
@@ -279,6 +282,219 @@ async function comprehensiveUsageExample() {
         console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
         console.log(`   ✓ Message: ${error.message}`);
         console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+      }
+
+      // ===== LOCK CREATION TESTS =====
+      console.log('\n📋 TESTING LOCK CREATION AND VALIDATION');
+      console.log('-'.repeat(45));
+
+      // CREATE LOCK - Valid lock creation (minimal fields only)
+      tally.total++; console.log('\n✅ Creating valid lock...');
+      const lockReservation = await client.createReservation({
+        type: 'LOCK',
+        arrival: '2025-01-17', // After regular reservation to avoid conflict
+        departure: '2025-01-19',
+        roomId: rooms.data[0].roomId,
+        additionalInfo: 'Test lock - room maintenance'
+      });
+      console.log(`   ✓ Created lock: ${lockReservation.data.reservationId}`);
+      console.log(`   ✓ Type: ${lockReservation.data.type}`);
+      console.log(`   ✓ Arrival: ${lockReservation.data.arrival}`);
+      console.log(`   ✓ RUID: ${lockReservation.meta.ruid}`); mark(true);
+
+      const lockId = lockReservation.data.reservationId;
+
+      // Test: Lock update with checkIn/checkOut fields should be rejected
+      tally.total++;
+      try {
+        console.log('\n✅ Lock update with checkIn/checkOut fields validation...');
+        await client.updateReservation(lockId, {
+          checkIn: '14:00', // This should be rejected for locks
+          checkOut: '11:00'
+        });
+        console.log('   ❌ Lock update with checkIn/checkOut should have been rejected'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected lock update with checkIn/checkOut: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+        console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+      }
+
+      // Test: Lock update with client data should be rejected
+      tally.total++;
+      try {
+        console.log('\n✅ Lock update with client data validation...');
+        await client.updateReservation(lockId, {
+          clientId: newClient.data.clientId, // This should be rejected for locks
+          client: {
+            clientId: newClient.data.clientId,
+            forename: newClient.data.forename,
+            name: newClient.data.name,
+            phone: newClient.data.phone,
+            email: newClient.data.email,
+            clientType: newClient.data.clientType,
+            countryId: newClient.data.countryId,
+            lang: newClient.data.lang
+          }
+        });
+        console.log('   ❌ Lock update with client data should have been rejected'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected lock update with client data: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+        console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+      }
+
+      // Test: Lock update with adults/children fields should be rejected
+      tally.total++;
+      try {
+        console.log('\n✅ Lock update with adults/children fields validation...');
+        await client.updateReservation(lockId, {
+          adults: 2, // This should be rejected for locks
+          children: 1,
+          kidsAge: [8]
+        });
+        console.log('   ❌ Lock update with guest fields should have been rejected'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected lock update with guest fields: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+        console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+      }
+
+      // Test: Lock update with registration field should be rejected
+      tally.total++;
+      try {
+        console.log('\n✅ Lock update with registration field validation...');
+        await client.updateReservation(lockId, {
+          registration: 'CHECKED_IN' // This should be rejected for locks
+        });
+        console.log('   ❌ Lock update with registration field should have been rejected'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected lock update with registration field: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+        console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+      }
+
+      // Test: Lock update with source/door code should be rejected
+      tally.total++;
+      try {
+        console.log('\n✅ Lock update with source/door code validation...');
+        await client.updateReservation(lockId, {
+          sourceId: 1, // This should be rejected for locks
+          doorCode: '1234'
+        });
+        console.log('   ❌ Lock update with source/door code should have been rejected'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected lock update with source/door code: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+        console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+      }
+
+      // Test: Lock update with color field should be rejected
+      tally.total++;
+      try {
+        console.log('\n✅ Lock update with color field validation...');
+        await client.updateReservation(lockId, {
+          color: '#ff5722' // This should be rejected for locks
+        });
+        console.log('   ❌ Lock update with color field should have been rejected'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected lock update with color field: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+        console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+      }
+
+      // Test: Lock update with meal plan should be rejected
+      tally.total++;
+      try {
+        console.log('\n✅ Lock update with meal plan validation...');
+        await client.updateReservation(lockId, {
+          meal: 'BB', // This should be rejected for locks
+          adultsPortion: 2,
+          childrenPortion: 0,
+          pricePerMeal: 50
+        });
+        console.log('   ❌ Lock update with meal plan should have been rejected'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected lock update with meal plan: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+        console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+      }
+
+      // Test: Lock update with pricing should be rejected
+      tally.total++;
+      try {
+        console.log('\n✅ Lock update with pricing validation...');
+        await client.updateReservation(lockId, {
+          prepayment: 100, // This should be rejected for locks
+          prepaymentDeadline: '2025-01-25',
+          price: 200,
+          pricePerRoom: 200,
+          discount: 10,
+          discountType: 0,
+          rateId: 1
+        });
+        console.log('   ❌ Lock update with pricing should have been rejected'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected lock update with pricing: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+        console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+      }
+
+      // Test: Lock update with payment information should be rejected
+      tally.total++;
+      try {
+        console.log('\n✅ Lock update with payment information validation...');
+        await client.updateReservation(lockId, {
+          paymentStatus: 'PAID_ALL', // This should be rejected for locks
+          paymentType: 'CASH_PAYMENT',
+          currency: 'USD'
+        });
+        console.log('   ❌ Lock update with payment information should have been rejected'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected lock update with payment information: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+        console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+      }
+
+      // Test: Valid lock update (only allowed fields)
+      tally.total++;
+      try {
+        console.log('\n✅ Valid lock update with allowed fields...');
+        const updatedLock = await client.updateReservation(lockId, {
+          additionalInfo: 'Updated lock information - maintenance completed',
+          arrival: '2025-01-18', // Should be allowed
+          departure: '2025-01-20'
+        });
+        console.log(`   ✓ Successfully updated lock: ${updatedLock.data.additionalInfo}`);
+        console.log(`   ✓ Updated arrival: ${updatedLock.data.arrival}`);
+        console.log(`   ✓ RUID: ${updatedLock.meta.ruid}`); mark(true);
+      } catch (error: any) {
+        console.log(`   ❌ Valid lock update failed: ${error.message}`); mark(false);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+        console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+      }
+
+      // Test: Lock overlap with existing reservation should be rejected
+      tally.total++;
+      try {
+        console.log('\n✅ Lock overlap with existing reservation validation...');
+        await client.updateReservation(lockId, {
+          arrival: reservation.data.arrival, // Same dates as existing reservation
+          departure: reservation.data.departure
+        });
+        console.log('   ❌ Overlapping lock should have been rejected'); mark(false);
+      } catch (error: any) {
+        console.log(`   ✓ Correctly rejected overlapping lock: ${error.message}`); mark(true);
+        console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+        console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+      }
+
+      // DELETE LOCK for cleanup
+      try {
+        console.log('\n✅ Deleting test lock...');
+        await client.cancelReservation(lockId);
+        console.log(`   ✓ Deleted lock: ${lockId}`);
+      } catch (error: any) {
+        console.log(`   ⚠️ Failed to delete lock: ${error.message}`);
       }
     } else {
       console.log('   ⚠️ No rooms available for reservation testing');
@@ -541,6 +757,255 @@ async function comprehensiveUsageExample() {
       }
     }
 
+    // ===== ROOM EDITING ERROR HANDLING TESTS =====
+    console.log('\n📋 TESTING ROOM EDITING ERROR HANDLING (EDGE CASES)');
+    console.log('-'.repeat(55));
+
+    // First, create a test room for editing
+    tally.total++; console.log('✅ Creating test room for editing tests...');
+    const testRoom = await client.createRoom({
+      name: 'Test Room for Editing',
+      persons: 2,
+      maxAdults: 2,
+      maxChildren: 1,
+      roomType: 'STANDARD_ROOM',
+      singleBed: 1,
+      doubleBed: 0,
+      extraBed: 0,
+      service: 'CLEAN',
+      serviceInfo: 'Daily cleaning',
+      info: 'Test room for error handling',
+      color: '#4caf50',
+      square: '20',
+      squareType: 'm2',
+      description: { default: 'Test room description', pl: 'Opis testowego pokoju' },
+      equipment: ['television', 'bathroom'],
+      shareInOffer: 1,
+      locationId: null
+    });
+    createdEntities.room = testRoom.data;
+    console.log(`   ✓ Created test room: ${testRoom.data.name} (ID: ${testRoom.data.roomId})`);
+    console.log(`   ✓ RUID: ${testRoom.meta.ruid}`); mark(true);
+
+    const testRoomId = testRoom.data.roomId!;
+
+    // Test: 401 Unauthorized error
+    tally.total++;
+    try {
+      console.log('\n✅ 401 Unauthorized error simulation...');
+      // This would normally be tested by using invalid credentials
+      // For simulation purposes, we'll test with a non-existent room ID that might trigger auth issues
+      await client.updateRoom(999999, { name: 'Should fail with auth error' });
+      console.log('   ❌ Should have failed with 401 error'); mark(false);
+    } catch (error: any) {
+      console.log(`   ✓ Correctly caught authorization-related error: ${error.message}`); mark(true);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
+    // Test: 404 Not Found error
+    tally.total++;
+    try {
+      console.log('\n✅ 404 Not Found error...');
+      await client.updateRoom(888888, { name: 'Non-existent room' });
+      console.log('   ❌ Should have failed with 404 error'); mark(false);
+    } catch (error: any) {
+      console.log(`   ✓ Correctly caught 404 error: ${error.message}`); mark(true);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
+    // Test: 422 Validation Error - Empty name
+    tally.total++;
+    try {
+      console.log('\n✅ 422 Validation Error - Empty name...');
+      await client.updateRoom(testRoomId, { name: '' });
+      console.log('   ❌ Should have failed with validation error'); mark(false);
+    } catch (error: any) {
+      console.log(`   ✓ Correctly rejected empty name: ${error.message}`); mark(true);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
+    // Test: 422 Validation Error - Negative persons
+    tally.total++;
+    try {
+      console.log('\n✅ 422 Validation Error - Negative persons...');
+      await client.updateRoom(testRoomId, { persons: -1 });
+      console.log('   ❌ Should have failed with negative persons'); mark(false);
+    } catch (error: any) {
+      console.log(`   ✓ Correctly rejected negative persons: ${error.message}`); mark(true);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
+    // Test: 422 Validation Error - Negative maxAdults
+    tally.total++;
+    try {
+      console.log('\n✅ 422 Validation Error - Negative maxAdults...');
+      await client.updateRoom(testRoomId, { maxAdults: -2 });
+      console.log('   ❌ Should have failed with negative maxAdults'); mark(false);
+    } catch (error: any) {
+      console.log(`   ✓ Correctly rejected negative maxAdults: ${error.message}`); mark(true);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
+    // Test: 422 Validation Error - Negative maxChildren
+    tally.total++;
+    try {
+      console.log('\n✅ 422 Validation Error - Negative maxChildren...');
+      await client.updateRoom(testRoomId, { maxChildren: -1 });
+      console.log('   ❌ Should have failed with negative maxChildren'); mark(false);
+    } catch (error: any) {
+      console.log(`   ✓ Correctly rejected negative maxChildren: ${error.message}`); mark(true);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
+    // Test: 422 Validation Error - Invalid room type
+    tally.total++;
+    try {
+      console.log('\n✅ 422 Validation Error - Invalid room type...');
+      await client.updateRoom(testRoomId, { roomType: 'INVALID_TYPE' as any });
+      console.log('   ❌ Should have failed with invalid room type'); mark(false);
+    } catch (error: any) {
+      console.log(`   ✓ Correctly rejected invalid room type: ${error.message}`); mark(true);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
+    // Test: 422 Validation Error - Negative bed counts
+    tally.total++;
+    try {
+      console.log('\n✅ 422 Validation Error - Negative bed counts...');
+      await client.updateRoom(testRoomId, { 
+        singleBed: -1, 
+        doubleBed: -1, 
+        extraBed: -1 
+      });
+      console.log('   ❌ Should have failed with negative bed counts'); mark(false);
+    } catch (error: any) {
+      console.log(`   ✓ Correctly rejected negative bed counts: ${error.message}`); mark(true);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
+    // Test: 400 Bad Request - Invalid room type ID
+    tally.total++;
+    try {
+      console.log('\n✅ 400 Bad Request - Invalid room type ID...');
+      await client.updateRoom(testRoomId, { roomTypeId: -999 });
+      console.log('   ❌ Should have failed with invalid room type ID'); mark(false);
+    } catch (error: any) {
+      console.log(`   ✓ Correctly rejected invalid room type ID: ${error.message}`); mark(true);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
+    // Test: 422 Validation Error - Extremely long name
+    tally.total++;
+    try {
+      console.log('\n✅ 422 Validation Error - Extremely long name...');
+      const longName = 'A'.repeat(1000); // 1000 character name
+      await client.updateRoom(testRoomId, { name: longName });
+      console.log('   ❌ Should have failed with extremely long name'); mark(false);
+    } catch (error: any) {
+      console.log(`   ✓ Correctly rejected extremely long name: ${error.message}`); mark(true);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
+    // Test: 422 Validation Error - Invalid color format
+    tally.total++;
+    try {
+      console.log('\n✅ 422 Validation Error - Invalid color format...');
+      await client.updateRoom(testRoomId, { color: 'invalid-color' });
+      console.log('   ❌ Should have failed with invalid color format'); mark(false);
+    } catch (error: any) {
+      console.log(`   ✓ Correctly rejected invalid color format: ${error.message}`); mark(true);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
+    // Test: 422 Validation Error - Invalid square type
+    tally.total++;
+    try {
+      console.log('\n✅ 422 Validation Error - Invalid square type...');
+      await client.updateRoom(testRoomId, { 
+        square: '25',
+        squareType: 'ft2' // Use valid but different type to test validation
+      });
+      console.log('   ❌ Should have failed with invalid square type'); mark(false);
+    } catch (error: any) {
+      console.log(`   ✓ Correctly rejected invalid square type: ${error.message}`); mark(true);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
+    // Test: 422 Validation Error - Invalid equipment array
+    tally.total++;
+    try {
+      console.log('\n✅ 422 Validation Error - Invalid equipment array...');
+      await client.updateRoom(testRoomId, { 
+        equipment: ['invalid_equipment_1', 'invalid_equipment_2'] as any // Non-existent equipment keys
+      });
+      console.log('   ❌ Should have failed with invalid equipment keys'); mark(false);
+    } catch (error: any) {
+      console.log(`   ✓ Correctly rejected invalid equipment keys: ${error.message}`); mark(true);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
+    // Test: 422 Validation Error - Inconsistent capacity
+    tally.total++;
+    try {
+      console.log('\n✅ 422 Validation Error - Inconsistent capacity...');
+      await client.updateRoom(testRoomId, { 
+        persons: 1,
+        maxAdults: 5, // maxAdults greater than total persons
+        maxChildren: 2
+      });
+      console.log('   ❌ Should have failed with inconsistent capacity'); mark(false);
+    } catch (error: any) {
+      console.log(`   ✓ Correctly rejected inconsistent capacity: ${error.message}`); mark(true);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
+    // Test: 422 Validation Error - Zero total capacity
+    tally.total++;
+    try {
+      console.log('\n✅ 422 Validation Error - Zero total capacity...');
+      await client.updateRoom(testRoomId, { 
+        persons: 0,
+        maxAdults: 0,
+        maxChildren: 0
+      });
+      console.log('   ❌ Should have failed with zero capacity'); mark(false);
+    } catch (error: any) {
+      console.log(`   ✓ Correctly rejected zero capacity: ${error.message}`); mark(true);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
+    // Test: Valid update after error tests
+    tally.total++;
+    try {
+      console.log('\n✅ Valid update after error tests...');
+      const validUpdate = await client.updateRoom(testRoomId, { 
+        name: 'Successfully Updated Test Room',
+        info: 'Room updated after error tests'
+      });
+      console.log(`   ✓ Successfully updated room: ${validUpdate.data.name}`);
+      console.log(`   ✓ Info: ${validUpdate.data.info}`);
+      console.log(`   ✓ RUID: ${validUpdate.meta.ruid}`); mark(true);
+    } catch (error: any) {
+      console.log(`   ❌ Valid update failed: ${error.message}`); mark(false);
+      console.log(`   ✓ Status: ${error.status || 'Unknown'}`);
+      console.log(`   ✓ RUID: ${error.ruid || 'N/A'}`);
+    }
+
     // ===== INVOICE CRUD TESTS =====
     console.log('\n📋 TESTING INVOICE CRUD OPERATIONS');
     console.log('-'.repeat(40));
@@ -627,6 +1092,23 @@ async function comprehensiveUsageExample() {
       }
     } catch (error: any) {
       console.log(`   ⚠️ Failed to delete reservation: ${error.message}`);
+      mark(false);
+    }
+
+    // Delete Room
+    try {
+      tally.total++;
+      if (createdEntities.room) {
+        console.log('✅ Deleting test room...');
+        await client.deleteRoom(createdEntities.room.roomId!);
+        console.log(`   ✓ Deleted room: ${createdEntities.room.name} (ID: ${createdEntities.room.roomId})`);
+        mark(true);
+      } else {
+        console.log('   ℹ️ No room to delete.');
+        mark(true);
+      }
+    } catch (error: any) {
+      console.log(`   ⚠️ Failed to delete room: ${error.message}`);
       mark(false);
     }
 

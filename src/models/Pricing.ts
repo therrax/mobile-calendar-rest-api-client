@@ -40,7 +40,7 @@ export class Pricing implements IPricing {
     
     let minPrice = Infinity;
     this.prices.forEach(price => {
-      if (price.derivedPrices.length > 0) {
+      if (price.derivedPrices && Array.isArray(price.derivedPrices) && price.derivedPrices.length > 0) {
         const minDerived = Math.min(...price.derivedPrices.map(dp => dp.price));
         minPrice = Math.min(minPrice, minDerived);
       } else {
@@ -58,7 +58,7 @@ export class Pricing implements IPricing {
     
     let maxPrice = 0;
     this.prices.forEach(price => {
-      if (price.derivedPrices.length > 0) {
+      if (price.derivedPrices && Array.isArray(price.derivedPrices) && price.derivedPrices.length > 0) {
         const maxDerived = Math.max(...price.derivedPrices.map(dp => dp.price));
         maxPrice = Math.max(maxPrice, maxDerived);
       } else {
